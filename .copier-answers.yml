@@ -1,0 +1,16 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v4.6.5
+_src_path: https://github.com/jupyterlab/extension-template
+advanced: false
+author_email: romain@tada.science
+author_name: Romain François
+has_ai_rules: false
+has_binder: false
+has_settings: false
+kind: frontend
+labextension_name: xeus_r_htmlwidget
+project_short_description: A JupyterLab extension to displat R htmlwidget
+python_name: xeus_r_htmlwidget
+repository: https://github.com/romainfrancois/xeus-r-htmlwidget
+test: false
+
