@@ -3,15 +3,26 @@ import {
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
 
-/**
- * Initialization data for the xeus_r_htmlwidget extension.
- */
+import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
+
+import { rendererFactory, MIME_TYPE } from './renderer';
+
 const plugin: JupyterFrontEndPlugin<void> = {
   id: 'xeus_r_htmlwidget:plugin',
-  description: 'A JupyterLab extension to display R htmlwidget',
+  description: 'A JupyterLab extension to display R htmlwidgets',
   autoStart: true,
-  activate: (app: JupyterFrontEnd) => {
-    console.log('JupyterLab extension xeus_r_htmlwidget is activated!');
+  requires: [IRenderMimeRegistry],
+
+  activate: (
+    app: JupyterFrontEnd,
+    rendermime: IRenderMimeRegistry
+  ) => {
+    rendermime.addFactory(rendererFactory, 0);
+
+    console.log(
+      'Custom MIME supported:',
+      rendermime.mimeTypes.includes(MIME_TYPE)
+    );
   }
 };
 
