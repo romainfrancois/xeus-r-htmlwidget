@@ -2,7 +2,7 @@
 
 [![Github Actions Status](https://github.com/romainfrancois/xeus-r-htmlwidget/workflows/Build/badge.svg)](https://github.com/romainfrancois/xeus-r-htmlwidget/actions/workflows/build.yml)
 
-A JupyterLab extension to displat R htmlwidget
+A JupyterLab extension to display R htmlwidget
 
 ## Requirements
 

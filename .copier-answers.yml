@@ -9,7 +9,7 @@ has_binder: false
 has_settings: false
 kind: frontend
 labextension_name: xeus_r_htmlwidget
-project_short_description: A JupyterLab extension to displat R htmlwidget
+project_short_description: A JupyterLab extension to display R htmlwidget
 python_name: xeus_r_htmlwidget
 repository: https://github.com/romainfrancois/xeus-r-htmlwidget
 test: false

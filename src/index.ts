@@ -8,7 +8,7 @@ import {
  */
 const plugin: JupyterFrontEndPlugin<void> = {
   id: 'xeus_r_htmlwidget:plugin',
-  description: 'A JupyterLab extension to displat R htmlwidget',
+  description: 'A JupyterLab extension to display R htmlwidget',
   autoStart: true,
   activate: (app: JupyterFrontEnd) => {
     console.log('JupyterLab extension xeus_r_htmlwidget is activated!');
