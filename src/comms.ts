@@ -2,22 +2,19 @@ import type { Kernel } from '@jupyterlab/services';
 
 export const COMM_TARGET = 'xeus-r.htmlwidget';
 
-export class WidgetCommRegistry {
-  private comms = new Set<string>();
+export function registerCommTarget(
+  kernel: Kernel.IKernelConnection
+): void {
+  kernel.registerCommTarget(COMM_TARGET, (comm, msg) => {
+    console.log('htmlwidget comm opened:', comm.commId);
+    console.log('comm_open data:', msg.content.data);
 
-  constructor(kernel: Kernel.IKernelConnection) {
-    kernel.registerCommTarget(COMM_TARGET, (comm, msg) => {
-      console.log('htmlwidget comm opened:', comm.commId);
-      this.comms.add(comm.commId);
+    comm.onMsg = msg => {
+      console.log('htmlwidget comm message:', msg.content.data);
+    };
 
-      comm.onClose = () => {
-        console.log('htmlwidget comm closed:', comm.commId);
-        this.comms.delete(comm.commId);
-      };
-    });
-  }
-
-  has(id: string): boolean {
-    return this.comms.has(id);
-  }
+    comm.onClose = () => {
+      console.log('htmlwidget comm closed:', comm.commId);
+    };
+  });
 }
