@@ -1,5 +1,6 @@
 import type { IRenderMime } from '@jupyterlab/rendermime-interfaces';
 import { Widget } from '@lumino/widgets';
+import { getComm, subscribe } from './comms';
 
 export const MIME_TYPE =
   'application/vnd.xeus-r.htmlwidget+json';
@@ -8,12 +9,52 @@ export class HTMLWidgetRenderer
   extends Widget
   implements IRenderMime.IRenderer {
 
+  private unsubscribe?: () => void;
+
   async renderModel(model: IRenderMime.IMimeModel): Promise<void> {
+    // Remove any previous subscription
+    this.unsubscribe?.();
+
     const data = model.data[MIME_TYPE] as
       unknown as { comm_id: string };
 
-    this.node.textContent = `HTML widget comm: ${data.comm_id}`;
+    const comm = getComm(data.comm_id);
+
+    if (!comm) {
+        this.node.textContent = 'HTML widget comm not found';
+        return;
+    }
+
+    // Subscribe before sending init
+    this.unsubscribe = subscribe(data.comm_id, message => {
+       console.log(message);
+       
+      if (message.method === 'init' && message.payload) {
+        const iframe = document.createElement('iframe');
+
+        iframe.style.width = '100%';
+        iframe.style.height = '500px';
+        iframe.style.border = 'none';
+
+        iframe.srcdoc = message.payload;
+
+        this.node.replaceChildren(iframe);
+      }
+    });
+
+    this.node.textContent = 'Loading HTML widget... ' + comm.commId;
+
+    await comm.send({
+        method: 'init'
+    });
   }
+
+  dispose(): void {
+    this.unsubscribe?.();
+    this.unsubscribe = undefined;
+    super.dispose();
+  }
+
 }
 
 export const rendererFactory: IRenderMime.IRendererFactory = {
