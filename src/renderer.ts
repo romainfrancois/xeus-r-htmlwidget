@@ -27,25 +27,32 @@ export class HTMLWidgetRenderer
 
     // Subscribe before sending init
     this.unsubscribe = subscribe(data.comm_id, message => {
-       console.log(message);
-       
-      if (message.method === 'init' && message.payload) {
-        const iframe = document.createElement('iframe');
 
-        iframe.style.width = '100%';
-        iframe.style.height = '500px';
-        iframe.style.border = 'none';
+        if (message.method === 'dependencies') {
+            console.log('HTMLWidget dependencies:', message.payload);
 
-        iframe.srcdoc = message.payload;
+            // once dependencies are loaded, continue ...
+        }
 
-        this.node.replaceChildren(iframe);
-      }
+        if (message.method === 'init' && message.payload) {
+            console.log('HTMLWidget HTML:', message.payload);
+
+            // const iframe = document.createElement('iframe');
+
+            // iframe.style.width = '100%';
+            // iframe.style.height = '500px';
+            // iframe.style.border = 'none';
+
+            // iframe.srcdoc = message.payload;
+
+            // this.node.replaceChildren(iframe);
+        }
     });
 
     this.node.textContent = 'Loading HTML widget... ' + comm.commId;
 
     await comm.send({
-        method: 'init'
+        method: 'dependencies'
     });
   }
 
