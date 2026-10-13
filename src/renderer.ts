@@ -28,32 +28,48 @@ export class HTMLWidgetRenderer
     // Subscribe before sending init
     this.unsubscribe = subscribe(data.comm_id, message => {
 
-        if (message.method === 'dependencies') {
-            console.log('HTMLWidget dependencies:', message.payload);
+        this.node.textContent = 'Loading HTML widget... ' + comm.commId;
 
-            // once dependencies are loaded, continue ...
-        }
+        switch (message.method) {
+            case 'init':
+                console.log('HTMLWidget init:', message.payload);
+                // const iframe = document.createElement('iframe');
 
-        if (message.method === 'init' && message.payload) {
-            console.log('HTMLWidget HTML:', message.payload);
+                // iframe.style.width = '100%';
+                // iframe.style.height = '500px';
+                // iframe.style.border = 'none';
 
-            // const iframe = document.createElement('iframe');
+                // iframe.srcdoc = message.payload;
 
-            // iframe.style.width = '100%';
-            // iframe.style.height = '500px';
-            // iframe.style.border = 'none';
+                // this.node.replaceChildren(iframe);
 
-            // iframe.srcdoc = message.payload;
+                break;
 
-            // this.node.replaceChildren(iframe);
-        }
+            case 'dependencies':
+                console.log('HTMLWidget dependencies:', message.payload);
+                this.node.textContent = 'Loading HTML widget dependencies ... ' + comm.commId;
+                
+                for (const dep of message.payload) {
+                    comm.send({
+                        method: 'dependency',
+                        name: dep.name,
+                        version: dep.version
+                    });
+                }
+
+                break;
+
+            case 'dependency':
+                console.log('HTMLWidget dependency:', message);
+                break;
+        };
+
     });
 
-    this.node.textContent = 'Loading HTML widget... ' + comm.commId;
-
-    await comm.send({
+    comm.send({
         method: 'dependencies'
     });
+    
   }
 
   dispose(): void {

@@ -2,20 +2,35 @@ import type { Kernel } from '@jupyterlab/services';
 
 export const COMM_TARGET = 'xeus-r.htmlwidget';
 
-export interface HTMLWidgetDependency {
-  name: string;
-  version: string;
-  src: string | null;
-  script: string | string[] | null;
-  stylesheet: string | string[] | null;
-  head: string | null;
-  all_files: boolean;
+export interface InitMessage {
+  method: 'init';
+  payload: string;
 }
 
-export interface HTMLWidgetMessage {
-  method: string;
-  payload?: string | HTMLWidgetDependency[];
+export interface Dependency {
+  name: string;
+  version: string;
 }
+
+export interface DependenciesMessage {
+  method: 'dependencies';
+  payload: Dependency[];
+}
+
+export interface DependencyMessage {
+  method: 'dependency';
+  name: string;
+  version: string;
+  files: {
+    path: string;
+    content: string; // base64
+  }[]
+}
+
+export type HTMLWidgetMessage = 
+  | InitMessage
+  | DependenciesMessage
+  | DependencyMessage;
 
 const comms = new Map<string, Kernel.IComm>();
 
