@@ -3,7 +3,7 @@ import { Widget } from '@lumino/widgets';
 import { getComm, subscribe } from './comms';
 
 export const MIME_TYPE =
-  'application/vnd.xeus-r.htmlwidget+json';
+  'application/vnd.jupyter.r-htmlwidget+json';
 
 export class HTMLWidgetRenderer
   extends Widget
