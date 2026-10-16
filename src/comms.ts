@@ -27,10 +27,16 @@ export interface DependencyMessage {
   }[]
 }
 
+export interface RuntimeMessage {
+  method: 'runtime';
+  content: string; // base64
+}
+
 export type HTMLWidgetMessage = 
   | InitMessage
   | DependenciesMessage
-  | DependencyMessage;
+  | DependencyMessage
+  | RuntimeMessage;
 
 const comms = new Map<string, Kernel.IComm>();
 

@@ -1,6 +1,7 @@
 import type { IRenderMime } from '@jupyterlab/rendermime-interfaces';
 import { Widget } from '@lumino/widgets';
 import { getComm, subscribe } from './comms';
+import { ensureRuntime } from './runtime';
 
 export const MIME_TYPE =
   'application/vnd.jupyter.r-htmlwidget+json';
@@ -24,6 +25,17 @@ export class HTMLWidgetRenderer
         this.node.textContent = 'HTML widget comm not found';
         return;
     }
+
+    await ensureRuntime(
+      () => {
+        comm.send({ method: 'runtime' });
+      },
+      callback => subscribe(data.comm_id, message => {
+        if (message.method === 'runtime') {
+          callback(message.content);
+        }
+      })
+    );
 
     // Subscribe before sending init
     this.unsubscribe = subscribe(data.comm_id, message => {
