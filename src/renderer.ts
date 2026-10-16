@@ -87,8 +87,8 @@ export class HTMLWidgetRenderer
             const data = JSON.parse(script.textContent);
           
             el.classList.add('html-widget-output');
+            el.classList.add('shiny-bound-output');
           
-            console.log('Rendering Leaflet:', data);
             binding.renderValue(el, {
               ...data,
               deps: []

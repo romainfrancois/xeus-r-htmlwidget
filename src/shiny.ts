@@ -46,10 +46,12 @@ export function ensureShiny(): void {
             value: JSONValue,
             _options?: unknown
         ) {
+            console.log('Shiny input:', name, value);
             inputHandler?.(name, value);
         },
 
         onInputChange(name: string, value: unknown) {
+            console.log('Shiny input:', name, value);
             inputHandler?.(name, value);
         }, 
 
