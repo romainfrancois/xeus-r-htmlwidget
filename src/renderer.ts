@@ -1,9 +1,21 @@
 import type { IRenderMime } from '@jupyterlab/rendermime-interfaces';
 import { Widget } from '@lumino/widgets';
 import { getComm, subscribe } from './comms';
+import { ensureRuntime } from './runtime';
+import { loadDependencies } from './dependencies';
 
 export const MIME_TYPE =
   'application/vnd.jupyter.r-htmlwidget+json';
+
+declare global {
+  interface Window {
+    HTMLWidgets: {
+      widget: (definition: any) => void;
+      staticRender: () => void;
+      getInstance: (element: HTMLElement) => any;
+    };
+  }
+}
 
 export class HTMLWidgetRenderer
   extends Widget
@@ -25,28 +37,47 @@ export class HTMLWidgetRenderer
         return;
     }
 
+    await ensureRuntime(
+      () => {
+        comm.send({ method: 'runtime' });
+      },
+      callback => subscribe(data.comm_id, message => {
+        if (message.method === 'runtime') {
+          callback(message.content);
+        }
+      })
+    );
+    
     // Subscribe before sending init
     this.unsubscribe = subscribe(data.comm_id, message => {
-       console.log(message);
-       
-      if (message.method === 'init' && message.payload) {
-        const iframe = document.createElement('iframe');
 
-        iframe.style.width = '100%';
-        iframe.style.height = '500px';
-        iframe.style.border = 'none';
+        switch (message.method) {
+            case 'init':
+                console.log('HTMLWidget init:', message.payload);
 
-        iframe.srcdoc = message.payload;
+                this.node.innerHTML = message.payload;
+                window.HTMLWidgets.staticRender();
+                
+                break;
 
-        this.node.replaceChildren(iframe);
-      }
+            case 'dependencies':
+              void loadDependencies(message)
+                .then(() => {
+                  console.log('HTMLWidget dependencies loaded');
+                  comm.send({ method: 'init' });
+                })
+                .catch(error => {
+                  console.error('HTMLWidget dependency loading failed:', error);
+                });
+              break;
+        };
+
     });
 
-    this.node.textContent = 'Loading HTML widget... ' + comm.commId;
-
-    await comm.send({
-        method: 'init'
+    comm.send({
+        method: 'dependencies'
     });
+
   }
 
   dispose(): void {
