@@ -54,22 +54,17 @@ export class HTMLWidgetRenderer
         switch (message.method) {
             case 'init':
                 console.log('HTMLWidget init:', message.payload);
-                // const iframe = document.createElement('iframe');
 
-                // iframe.style.width = '100%';
-                // iframe.style.height = '500px';
-                // iframe.style.border = 'none';
-
-                // iframe.srcdoc = message.payload;
-
-                // this.node.replaceChildren(iframe);
-
+                this.node.innerHTML = message.payload;
+                window.HTMLWidgets.staticRender();
+                
                 break;
 
             case 'dependencies':
               void loadDependencies(message)
                 .then(() => {
                   console.log('HTMLWidget dependencies loaded');
+                  comm.send({ method: 'init' });
                 })
                 .catch(error => {
                   console.error('HTMLWidget dependency loading failed:', error);
