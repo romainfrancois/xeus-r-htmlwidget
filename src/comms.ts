@@ -7,24 +7,17 @@ export interface InitMessage {
   payload: string;
 }
 
-export interface Dependency {
+export interface DependencyFile {
   name: string;
   version: string;
+  path: string;
+  content: string; // base64
 }
 
 export interface DependenciesMessage {
   method: 'dependencies';
-  payload: Dependency[];
-}
-
-export interface DependencyMessage {
-  method: 'dependency';
-  name: string;
-  version: string;
-  files: {
-    path: string;
-    content: string; // base64
-  }[]
+  scripts: DependencyFile[];
+  stylesheets: DependencyFile[];
 }
 
 export interface RuntimeMessage {
@@ -35,7 +28,6 @@ export interface RuntimeMessage {
 export type HTMLWidgetMessage = 
   | InitMessage
   | DependenciesMessage
-  | DependencyMessage
   | RuntimeMessage;
 
 const comms = new Map<string, Kernel.IComm>();
