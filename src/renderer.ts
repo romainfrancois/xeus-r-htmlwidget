@@ -3,6 +3,8 @@ import { Widget } from '@lumino/widgets';
 import { getComm, subscribe } from './comms';
 import { ensureRuntime } from './runtime';
 import { loadDependencies } from './dependencies';
+import { ensureShiny, setInputHandler, getOutputBinding } from './shiny';
+import type { JSONValue } from '@lumino/coreutils';
 
 export const MIME_TYPE =
   'application/vnd.jupyter.r-htmlwidget+json';
@@ -16,6 +18,8 @@ declare global {
     };
   }
 }
+
+ensureShiny();
 
 export class HTMLWidgetRenderer
   extends Widget
@@ -48,28 +52,61 @@ export class HTMLWidgetRenderer
       })
     );
     
+    setInputHandler((name, value) => {
+      comm.send({
+        method: 'input',
+        name,
+        value: JSON.parse(JSON.stringify(value)) as JSONValue
+      });
+    });
+
     // Subscribe before sending init
     this.unsubscribe = subscribe(data.comm_id, message => {
 
         switch (message.method) {
-            case 'init':
-                console.log('HTMLWidget init:', message.payload);
-
-                this.node.innerHTML = message.payload;
-                window.HTMLWidgets.staticRender();
-                
-                break;
-
-            case 'dependencies':
-              void loadDependencies(message)
-                .then(() => {
-                  console.log('HTMLWidget dependencies loaded');
-                  comm.send({ method: 'init' });
-                })
-                .catch(error => {
-                  console.error('HTMLWidget dependency loading failed:', error);
-                });
+          case 'init': {
+            this.node.innerHTML = message.payload;
+          
+            const el = this.node.querySelector<HTMLElement>('.html-widget');
+            if (!el) {
               break;
+            }
+          
+            const script = this.node.querySelector<HTMLScriptElement>(
+              `script[data-for="${el.id}"]`
+            );
+            if (!script?.textContent) {
+              break;
+            }
+          
+            const binding = getOutputBinding('leaflet');
+            if (!binding) {
+              break;
+            }
+          
+            const data = JSON.parse(script.textContent);
+          
+            el.classList.add('html-widget-output');
+          
+            console.log('Rendering Leaflet:', data);
+            binding.renderValue(el, {
+              ...data,
+              deps: []
+            });
+          
+            break;
+          }
+          
+          case 'dependencies':
+            void loadDependencies(message)
+              .then(() => {
+                console.log('HTMLWidget dependencies loaded');
+                comm.send({ method: 'init' });
+              })
+              .catch(error => {
+                console.error('HTMLWidget dependency loading failed:', error);
+              });
+            break;
         };
 
     });
