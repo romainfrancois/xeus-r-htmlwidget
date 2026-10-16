@@ -2,6 +2,7 @@ import type { IRenderMime } from '@jupyterlab/rendermime-interfaces';
 import { Widget } from '@lumino/widgets';
 import { getComm, subscribe } from './comms';
 import { ensureRuntime } from './runtime';
+import { loadDependencies } from './dependencies';
 
 export const MIME_TYPE =
   'application/vnd.jupyter.r-htmlwidget+json';
@@ -66,8 +67,13 @@ export class HTMLWidgetRenderer
                 break;
 
             case 'dependencies':
-              console.log('HTMLWidget scripts:', message.scripts);
-              console.log('HTMLWidget stylesheets:', message.stylesheets);
+              void loadDependencies(message)
+                .then(() => {
+                  console.log('HTMLWidget dependencies loaded');
+                })
+                .catch(error => {
+                  console.error('HTMLWidget dependency loading failed:', error);
+                });
               break;
         };
 
