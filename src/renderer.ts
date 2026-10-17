@@ -3,7 +3,7 @@ import { Widget } from '@lumino/widgets';
 import { getComm, subscribe } from './comms';
 import { ensureRuntime } from './runtime';
 import { loadDependencies } from './dependencies';
-import { ensureShiny, setInputHandler, getOutputBinding } from './shiny';
+import { ensureShiny, setInputHandler, getOutputBindingForElement } from './shiny';
 import type { JSONValue } from '@lumino/coreutils';
 
 export const MIME_TYPE =
@@ -13,6 +13,7 @@ declare global {
   interface Window {
     HTMLWidgets: {
       widget: (definition: any) => void;
+      widgets: Array<{ name: string }>;
       staticRender: () => void;
       getInstance: (element: HTMLElement) => any;
     };
@@ -71,23 +72,32 @@ export class HTMLWidgetRenderer
             if (!el) {
               break;
             }
-          
+            console.log('element:', el);
+
             const script = this.node.querySelector<HTMLScriptElement>(
               `script[data-for="${el.id}"]`
             );
+
+            console.log('script:', script);
+            console.log('script content:', script?.textContent);
+
             if (!script?.textContent) {
               break;
             }
-          
-            const binding = getOutputBinding('leaflet');
+
+            el.classList.add('html-widget-output', 'shiny-bound-output');
+
+            console.log('before binding lookup');
+
+            const binding = getOutputBindingForElement(el);
+
             if (!binding) {
+              console.warn(`No output binding for ${el.id}`);
               break;
             }
-          
+            console.log('binding:', binding);
+            
             const data = JSON.parse(script.textContent);
-          
-            el.classList.add('html-widget-output');
-            el.classList.add('shiny-bound-output');
           
             binding.renderValue(el, {
               ...data,
@@ -96,11 +106,11 @@ export class HTMLWidgetRenderer
           
             break;
           }
-          
+
           case 'dependencies':
             void loadDependencies(message)
               .then(() => {
-                console.log('HTMLWidget dependencies loaded');
+                console.log('HTMLWidget dependencies loaded', message);
                 comm.send({ method: 'init' });
               })
               .catch(error => {

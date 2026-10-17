@@ -32,6 +32,16 @@ class OutputBindings {
 
 let inputHandler: InputHandler | undefined;
 
+interface OutputBinding {
+    find(scope: HTMLElement): HTMLElement[];
+    renderValue(el: HTMLElement, data: any): void;
+}
+
+interface RegisteredBinding {
+    name: string;
+    binding: OutputBinding;
+}
+
 export function setInputHandler(handler: InputHandler): void {
     inputHandler = handler;
 }
@@ -76,6 +86,17 @@ export function ensureShiny(): void {
 
 export function getOutputBinding(name: string) {
     return (window as any).Shiny.outputBindings
-      .getBindings()
-      .find((entry: any) => entry.name === name)?.binding;
+        .getBindings()
+        .find((entry: any) => entry.name === name)?.binding;
+}
+
+export function getOutputBindingForElement(
+    el: HTMLElement
+  ): OutputBinding | undefined {
+    const bindings =
+    (window as any).Shiny.outputBindings.getBindings() as RegisteredBinding[];
+  
+    return bindings.find(({ name }) =>
+      el.classList.contains(name)
+    )?.binding;
   }
