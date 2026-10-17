@@ -5,6 +5,7 @@ import { ensureRuntime } from './runtime';
 import { loadDependencies } from './dependencies';
 import { ensureShiny, setInputHandler, getOutputBindingForElement, dispatchCustomMessage } from './shiny';
 import type { JSONValue } from '@lumino/coreutils';
+// import type { Kernel } from '@jupyterlab/services';
 
 export const MIME_TYPE =
   'application/vnd.jupyter.r-htmlwidget+json';
@@ -26,6 +27,8 @@ export class HTMLWidgetRenderer
   extends Widget
   implements IRenderMime.IRenderer {
 
+  // private _comm: Kernel.IComm | null = null;
+  // private _elementId: string | null = null;
   private unsubscribe?: () => void;
 
   async renderModel(model: IRenderMime.IMimeModel): Promise<void> {
@@ -41,6 +44,7 @@ export class HTMLWidgetRenderer
         this.node.textContent = 'HTML widget comm not found';
         return;
     }
+    // this._comm = comm;
 
     await ensureRuntime(
       () => {
@@ -92,9 +96,18 @@ export class HTMLWidgetRenderer
             
             const data = JSON.parse(script.textContent);
           
+            (window as any).HTMLWidgets.shinyMode = true;
+
             binding.renderValue(el, {
               ...data,
               deps: []
+            });
+
+            // this._elementId = el.id;
+
+            comm.send({
+              method: 'initialized',
+              id: el.id
             });
           
             break;
@@ -112,6 +125,7 @@ export class HTMLWidgetRenderer
             break;
 
           case 'custom': {
+            console.log("custom message", message);
             dispatchCustomMessage(message.type, message.message);
             break;
           }

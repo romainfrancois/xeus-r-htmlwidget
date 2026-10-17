@@ -47,6 +47,10 @@ export function setInputHandler(handler: InputHandler): void {
 }
 
 export function ensureShiny(): void {
+    if ((window as any).Shiny) {
+        return;
+    }
+
     const shiny = {
         OutputBinding,
         outputBindings: new OutputBindings(),
@@ -110,3 +114,5 @@ export function dispatchCustomMessage(
   
     handler(message);
 } 
+
+(window as any).__customMessageHandlers = customMessageHandlers;
