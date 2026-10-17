@@ -72,10 +72,6 @@ export function ensureShiny(): void {
             customMessageHandlers.set(type, handler);
         },
         
-        dispatchCustomMessage(type: string, message: unknown) {
-            customMessageHandlers.get(type)?.(message);
-        },
-
         renderDependencies(_deps: unknown) {
             // Dependencies are already loaded by loadDependencies().
         },
@@ -100,3 +96,17 @@ export function getOutputBindingForElement(
       el.classList.contains(name)
     )?.binding;
   }
+
+export function dispatchCustomMessage(
+    type: string,
+    message: unknown
+  ): void {
+    const handler = customMessageHandlers.get(type);
+  
+    if (!handler) {
+      console.warn(`No Shiny custom message handler for "${type}"`);
+      return;
+    }
+  
+    handler(message);
+} 

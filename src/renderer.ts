@@ -3,7 +3,7 @@ import { Widget } from '@lumino/widgets';
 import { getComm, subscribe } from './comms';
 import { ensureRuntime } from './runtime';
 import { loadDependencies } from './dependencies';
-import { ensureShiny, setInputHandler, getOutputBindingForElement } from './shiny';
+import { ensureShiny, setInputHandler, getOutputBindingForElement, dispatchCustomMessage } from './shiny';
 import type { JSONValue } from '@lumino/coreutils';
 
 export const MIME_TYPE =
@@ -110,6 +110,11 @@ export class HTMLWidgetRenderer
                 console.error('HTMLWidget dependency loading failed:', error);
               });
             break;
+
+          case 'custom': {
+            dispatchCustomMessage(message.type, message.message);
+            break;
+          }
         };
 
     });
