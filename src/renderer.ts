@@ -72,14 +72,10 @@ export class HTMLWidgetRenderer
             if (!el) {
               break;
             }
-            console.log('element:', el);
-
+            
             const script = this.node.querySelector<HTMLScriptElement>(
               `script[data-for="${el.id}"]`
             );
-
-            console.log('script:', script);
-            console.log('script content:', script?.textContent);
 
             if (!script?.textContent) {
               break;
@@ -87,15 +83,12 @@ export class HTMLWidgetRenderer
 
             el.classList.add('html-widget-output', 'shiny-bound-output');
 
-            console.log('before binding lookup');
-
             const binding = getOutputBindingForElement(el);
 
             if (!binding) {
               console.warn(`No output binding for ${el.id}`);
               break;
             }
-            console.log('binding:', binding);
             
             const data = JSON.parse(script.textContent);
           
