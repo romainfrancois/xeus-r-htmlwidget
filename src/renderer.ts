@@ -57,14 +57,6 @@ export class HTMLWidgetRenderer
       })
     );
     
-    setInputHandler((name, value) => {
-      comm.send({
-        method: 'input',
-        name,
-        value: JSON.parse(JSON.stringify(value)) as JSONValue
-      });
-    });
-
     // Subscribe before sending init
     this.unsubscribe = subscribe(data.comm_id, message => {
 
@@ -101,6 +93,14 @@ export class HTMLWidgetRenderer
             binding.renderValue(el, {
               ...data,
               deps: []
+            });
+
+            setInputHandler(el.id, (name, value) => {
+              comm.send({
+                method: 'input',
+                name,
+                value: JSON.parse(JSON.stringify(value)) as JSONValue
+              });
             });
 
             // this._elementId = el.id;

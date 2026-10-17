@@ -1,9 +1,30 @@
 import type { JSONValue } from '@lumino/coreutils';
 
-type InputHandler = (
-  name: string,
-  value: unknown
-) => void;
+type InputHandler = (name: string, value: unknown) => void;
+
+const inputHandlers = new Map<string, InputHandler>();
+
+export function setInputHandler(
+  widgetId: string,
+  handler: InputHandler
+): void {
+  inputHandlers.set(widgetId, handler);
+}
+
+export function removeInputHandler(widgetId: string): void {
+  inputHandlers.delete(widgetId);
+}
+
+function dispatchInput(name: string, value: unknown): void {
+  // Match the longest registered widget ID.
+  const widgetId = [...inputHandlers.keys()]
+    .filter(id => name.startsWith(`${id}_`))
+    .sort((a, b) => b.length - a.length)[0];
+
+  if (widgetId) {
+    inputHandlers.get(widgetId)?.(name, value);
+  }
+}
 
 const customMessageHandlers = new Map<
   string,
@@ -30,8 +51,6 @@ class OutputBindings {
     }
 }
 
-let inputHandler: InputHandler | undefined;
-
 interface OutputBinding {
     find(scope: HTMLElement): HTMLElement[];
     renderValue(el: HTMLElement, data: any): void;
@@ -40,10 +59,6 @@ interface OutputBinding {
 interface RegisteredBinding {
     name: string;
     binding: OutputBinding;
-}
-
-export function setInputHandler(handler: InputHandler): void {
-    inputHandler = handler;
 }
 
 export function ensureShiny(): void {
@@ -55,19 +70,15 @@ export function ensureShiny(): void {
         OutputBinding,
         outputBindings: new OutputBindings(),
 
-        setInputValue(
-            name: string,
-            value: JSONValue,
-            _options?: unknown
-        ) {
+        setInputValue(name: string, value: JSONValue, _options?: unknown) {
             console.log('Shiny input:', name, value);
-            inputHandler?.(name, value);
+            dispatchInput(name, value);
         },
-
+          
         onInputChange(name: string, value: unknown) {
             console.log('Shiny input:', name, value);
-            inputHandler?.(name, value);
-        }, 
+            dispatchInput(name, value);
+        },
 
         addCustomMessageHandler(
             type: string,
