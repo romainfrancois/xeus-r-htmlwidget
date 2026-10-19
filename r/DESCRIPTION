@@ -1,9 +1,9 @@
 Package: jupyter.htmlwidgets
 Title: Display and Interact with HTML Widgets in Jupyter
-Version: 0.0.0.9001
+Version: 0.0.0.9002
 Authors@R: 
     c(
-        person("Romain", "François", email = "first.last@example.com", role = c("aut", "cre")), 
+        person("Romain", "François", email = "romain@tada.science", role = c("aut", "cre")), 
         person("QuantStack", role = c("cph"))
     )
 Description: Display interactive HTML widgets in Jupyter notebooks
