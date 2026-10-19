@@ -1,0 +1,19 @@
+Package: jupyter.htmlwidgets
+Title: Display and Interact with HTML Widgets in Jupyter
+Version: 0.0.0.9000
+Authors@R: 
+    c(
+        person("Romain", "François", email = "first.last@example.com", role = c("aut", "cre")), 
+        person("QuantStack", role = c("cph"))
+    )
+Description: Display interactive HTML widgets in Jupyter notebooks
+    using the xeus-r kernel. Provides support for rendering widgets
+    created with the htmlwidgets package and communicating between
+    R and JavaScript through Jupyter comms, including Shiny-compatible
+    inputs and custom messages without requiring a Shiny server.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Imports: 
+    hera
