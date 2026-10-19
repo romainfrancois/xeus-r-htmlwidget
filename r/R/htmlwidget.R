@@ -68,13 +68,19 @@ HTMLWidget <- R6::R6Class(
       invisible(NULL)
     },
 
-    on_input = function(callback) {
-      if (is.null(callback)) {
-        # reset
+    on_input = function(name, callback = NULL) {
+      if (is.null(name)) {
         private$input_callbacks <- list()
-      } else if (is.function(callback)) {
-        # add
-        private$input_callbacks[[length(private$input_callbacks) + 1L]] <- callback
+        return(invisible(self))
+      }
+
+      stopifnot(is.character(name), length(name) == 1L)
+
+      if (is.null(callback)) {
+        private$input_callbacks[[name]] <- NULL
+      } else {
+        stopifnot(is.function(callback))
+        private$input_callbacks[[name]] <- callback
       }
 
       invisible(self)
