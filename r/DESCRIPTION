@@ -1,6 +1,6 @@
 Package: jupyter.htmlwidgets
 Title: Display and Interact with HTML Widgets in Jupyter
-Version: 0.0.0.9000
+Version: 0.0.0.9001
 Authors@R: 
     c(
         person("Romain", "François", email = "first.last@example.com", role = c("aut", "cre")), 

@@ -52,7 +52,7 @@ HTMLWidget <- R6::R6Class(
         runtime      = self$on_runtime(), 
         initialized  = self$on_initialized(data),
 
-        input        = self$handle_input(data$value)
+        input        = self$handle_input(data)
       )
     },
 
@@ -61,20 +61,35 @@ HTMLWidget <- R6::R6Class(
     },
 
     handle_input = function(data) {
-      callbacks <- private$input_callbacks
-      for (cb in callbacks) {
-        cb(data)
+      prefix <- paste0(self$id, "_")
+
+      if (!startsWith(data$name, prefix)) {
+        return(invisible(NULL))
       }
+
+      name <- substring(data$name, nchar(prefix) + 1L)
+      callback <- private$input_callbacks[[name]]
+
+      if (is.function(callback)) {
+        callback(data$value)
+      }
+
       invisible(NULL)
     },
 
-    on_input = function(callback) {
-      if (is.null(callback)) {
-        # reset
+    on_input = function(name, callback = NULL) {
+      if (is.null(name)) {
         private$input_callbacks <- list()
-      } else if (is.function(callback)) {
-        # add
-        private$input_callbacks[[length(private$input_callbacks) + 1L]] <- callback
+        return(invisible(self))
+      }
+
+      stopifnot(is.character(name), length(name) == 1L)
+
+      if (is.null(callback)) {
+        private$input_callbacks[[name]] <- NULL
+      } else {
+        stopifnot(is.function(callback))
+        private$input_callbacks[[name]] <- callback
       }
 
       invisible(self)
