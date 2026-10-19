@@ -1,4 +1,5 @@
 import type { Kernel } from '@jupyterlab/services';
+import type { JSONValue } from '@lumino/coreutils';
 
 export const COMM_TARGET = 'xeus-r.htmlwidget';
 
@@ -25,10 +26,17 @@ export interface RuntimeMessage {
   content: string; // base64
 }
 
+interface CustomMessage {
+  method: 'custom';
+  type: string;
+  message: JSONValue;
+}
+
 export type HTMLWidgetMessage = 
   | InitMessage
   | DependenciesMessage
-  | RuntimeMessage;
+  | RuntimeMessage
+  | CustomMessage;
 
 const comms = new Map<string, Kernel.IComm>();
 
