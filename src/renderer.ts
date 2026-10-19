@@ -117,6 +117,12 @@ export class HTMLWidgetRenderer
             void loadDependencies(message)
               .then(() => {
                 console.log('HTMLWidget dependencies loaded', message);
+
+                console.log(
+                  'Output bindings:',
+                  (window as any).Shiny?.outputBindings?.getBindings()
+                );
+                
                 comm.send({ method: 'init' });
               })
               .catch(error => {
