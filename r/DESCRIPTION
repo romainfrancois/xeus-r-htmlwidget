@@ -11,6 +11,8 @@ Description: Display interactive HTML widgets in Jupyter notebooks
     created with the htmlwidgets package and communicating between
     R and JavaScript through Jupyter comms, including Shiny-compatible
     inputs and custom messages without requiring a Shiny server.
+URL: https://github.com/romainfrancois/xeus-r-htmlwidget
+BugReports: https://github.com/romainfrancois/xeus-r-htmlwidget/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
