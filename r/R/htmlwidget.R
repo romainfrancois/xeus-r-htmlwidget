@@ -30,6 +30,10 @@ HTMLWidget <- R6::R6Class(
     send_custom_message = function(type, message) {
       stopifnot(is.character(type), length(type) == 1L, !is.na(type))
 
+      if (self$closed) {
+        stop("Cannot send a message: HTMLWidget comm is closed")
+      }
+
       self$comm$send(list(
         method = "custom",
         type = type,
