@@ -6,6 +6,7 @@ HTMLWidget <- R6::R6Class(
   "HTMLWidget",
 
   private = list(
+    closed = TRUE,
     dependencies = NULL, 
     input_callbacks = list()
   ),
@@ -19,10 +20,10 @@ HTMLWidget <- R6::R6Class(
       self$widget <- widget
 
       self$comm <- CommManager$new_comm("xeus-r.htmlwidget")
-
       self$comm$on_message(self$on_message)
 
       env_widgets[[self$comm$id]] <- self
+      private$closed <- FALSE
       self$comm$open()
     },
 
@@ -143,6 +144,18 @@ HTMLWidget <- R6::R6Class(
         stylesheets = unname(stylesheets)
       ))
 
+    }, 
+
+    close = function() {
+      if (private$closed) {
+        return(invisible(self))
+      }
+
+      self$comm$close()
+      self$closed <- TRUE
+
+      private$input_callbacks <- list()
+      invisible(self)
     }
   )
 )
