@@ -20,9 +20,16 @@ HTMLWidget <- R6::R6Class(
       self$widget <- widget
 
       self$comm <- CommManager$new_comm("xeus-r.htmlwidget")
+      comm_id <- self$comm$id
+      
       self$comm$on_message(self$on_message)
+      self$comm$on_close(function(message) {
+        private$closed <- TRUE
+        private$input_callbacks <- list()
+        env_widgets[[comm_id]] <- NULL
+      })
 
-      env_widgets[[self$comm$id]] <- self
+      env_widgets[[comm_id]] <- self
       private$closed <- FALSE
       self$comm$open()
     },
