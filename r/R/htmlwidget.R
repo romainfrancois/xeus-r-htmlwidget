@@ -1,12 +1,6 @@
 env_widgets <- new.env()
 
-register_htmlwidget_handler <- function() {
-  if (is_xeusr()) {
-    # maybe the jupyter lab extension should register the target instead
-    CommManager$register_comm_target("xeus-r.htmlwidget")
-  }
-}
-
+#' @import hera
 #' @export
 HTMLWidget <- R6::R6Class(
   "HTMLWidget",
