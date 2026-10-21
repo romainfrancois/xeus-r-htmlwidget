@@ -12,7 +12,7 @@ WidgetView <- R6::R6Class("WidgetView",
       self$comm$on_message(function(data) {
         private$handle_message(data)
       })
-      self$on_close(function(...) {
+      self$comm$on_close(function(...) {
         private$cleanup()
       })
       private$closed <- FALSE
@@ -43,29 +43,7 @@ WidgetView <- R6::R6Class("WidgetView",
       ))
 
       invisible(self)
-    }, 
-
-    handle_message = function(data) {
-      if (private$closed) {
-        return(invisible(NULL))
-      }
-
-      switch(data$method, 
-        initialized = {
-          self$id <- data$id
-        }, 
-        input = {
-          self$widget$handle_input(
-            data$name, data$value, self
-          )
-        }, 
-        init = private$send_init(), 
-        runtime = private$send_runtime(), 
-        dependencies = private$send_dependencies()
-      )
     }
-
-
   ), 
 
   private = list(
@@ -73,7 +51,7 @@ WidgetView <- R6::R6Class("WidgetView",
 
     send_init = function() {
       rendered <- htmltools::renderTags(
-        htmltools::as.tags(self$widget$widget)
+        htmltools::as.tags(self$widget$htmlwidget)
       )
       self$comm$send(
         data = list(
@@ -99,7 +77,7 @@ WidgetView <- R6::R6Class("WidgetView",
     }, 
 
     send_dependencies = function() {
-      dependencies <- htmltools::resolveDependencies(self$widget$widget$dependencies)
+      dependencies <- htmltools::resolveDependencies(self$widget$htmlwidget$dependencies)
       
       scripts <- list()
       stylesheets <- list()
@@ -123,6 +101,43 @@ WidgetView <- R6::R6Class("WidgetView",
         scripts     = unname(scripts),
         stylesheets = unname(stylesheets)
       ))
+    }, 
+
+    handle_message = function(data) {
+      if (private$closed) {
+        return(invisible(NULL))
+      }
+
+      switch(data$method, 
+        initialized = {
+          self$id <- data$id
+        }, 
+        input = {
+          self$widget$handle_input(
+            data$name, data$value, self
+          )
+        }, 
+        init = private$send_init(), 
+        runtime = private$send_runtime(), 
+        dependencies = private$send_dependencies()
+      )
+    }, 
+
+    cleanup = function() {
+      if (private$closed && is.null(self$widget)) {
+        return(invisible(NULL))
+      }
+
+      private$closed <- TRUE
+
+      widget <- self$widget
+      self$widget <- NULL
+
+      if (!is.null(widget)) {
+        widget$remove_view(self$comm$id)
+      }
+
+      invisible(NULL)
     }
 
   )
@@ -135,17 +150,18 @@ Widget <- R6::R6Class(
   "Widget",
 
   private = list(
-    widget = NULL, 
     views = NULL,
     input_callbacks = NULL
   ),
 
   public = list(
+
+    htmlwidget = NULL, 
     
-    initialize = function(widget) {
-      private$widget <- widget
+    initialize = function(htmlwidget) {
+      self$htmlwidget <- htmlwidget
       private$views <- new.env(parent = emptyenv())
-      private$input_callback <- new.env(parent = emptyenv())
+      private$input_callbacks <- new.env(parent = emptyenv())
     },
 
     new_view = function() {
@@ -190,18 +206,18 @@ Widget <- R6::R6Class(
     },
 
     close = function() {
-      ids <- ls(self$views)
+      ids <- ls(private$views)
 
       for (id in ids) {
-        self$views[[id]]$close()
+        private$views[[id]]$close()
       }
 
       invisible(self)
     },
 
     send_custom_message = function(type, message) {
-      for (id in ls(self$views)) {
-        self$views[[id]]$send_custom_message(type, message)
+      for (id in ls(private$views)) {
+        private$views[[id]]$send_custom_message(type, message)
       }
 
       invisible(self)
