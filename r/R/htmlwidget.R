@@ -44,6 +44,10 @@ WidgetView <- R6::R6Class("WidgetView",
       ))
 
       invisible(self)
+    }, 
+
+    description = function() {
+      glue::glue("<View comm_id={self$comm$id} id={self$id}>")
     }
   ), 
 
@@ -150,8 +154,14 @@ WidgetView <- R6::R6Class("WidgetView",
 Widget <- R6::R6Class(
   "Widget",
 
+  active = list(
+    views = function(value) {
+      private$views_
+    }
+  ),
+
   private = list(
-    views = NULL,
+    views_ = NULL,
     input_callbacks = NULL
   ),
 
@@ -161,19 +171,19 @@ Widget <- R6::R6Class(
     
     initialize = function(htmlwidget) {
       self$htmlwidget <- htmlwidget
-      private$views <- new.env(parent = emptyenv())
+      private$views_ <- new.env(parent = emptyenv())
       private$input_callbacks <- new.env(parent = emptyenv())
     },
 
     new_view = function() {
       view <- WidgetView$new(self)
-      private$views[[view$comm$id]] <- view
+      private$views_[[view$comm$id]] <- view
       view
     }, 
 
     remove_view = function(comm_id) {
-      if (exists(comm_id, envir = private$views, inherits = FALSE)) {
-        rm(list = comm_id, envir = private$views)
+      if (exists(comm_id, envir = private$views_, inherits = FALSE)) {
+        rm(list = comm_id, envir = private$views_)
       }
 
       invisible(self)
@@ -207,18 +217,18 @@ Widget <- R6::R6Class(
     },
 
     close = function() {
-      ids <- ls(private$views)
+      ids <- ls(private$views_)
 
       for (id in ids) {
-        private$views[[id]]$close()
+        private$views_[[id]]$close()
       }
 
       invisible(self)
     },
 
     send_custom_message = function(type, message) {
-      for (id in ls(private$views)) {
-        private$views[[id]]$send_custom_message(type, message)
+      for (id in ls(private$views_)) {
+        private$views_[[id]]$send_custom_message(type, message)
       }
 
       invisible(self)
