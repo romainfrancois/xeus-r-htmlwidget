@@ -44,6 +44,51 @@ export function getComm(id: string): Kernel.IComm | undefined {
   return comms.get(id);
 }
 
+const closeHandlers = new Map<string, Set<() => void>>();
+
+export function subscribeClose(
+  commId: string,
+  callback: () => void
+): () => void {
+  let handlers = closeHandlers.get(commId);
+
+  if (!handlers) {
+    handlers = new Set();
+    closeHandlers.set(commId, handlers);
+
+    const comm = getComm(commId);
+
+    if (!comm) {
+      closeHandlers.delete(commId);
+      throw new Error(`Comm not found: ${commId}`);
+    }
+
+    const previousOnClose = comm.onClose;
+
+    comm.onClose = message => {
+      closeHandlers.delete(commId);
+
+      try {
+        for (const handler of handlers!) {
+          handler();
+        }
+      } finally {
+        previousOnClose?.(message);
+      }
+    };
+  }
+
+  handlers.add(callback);
+
+  return () => {
+    handlers.delete(callback);
+
+    if (handlers.size === 0) {
+      closeHandlers.delete(commId);
+    }
+  };
+}
+
 const listeners = new Map<
   string,
   Set<(message: HTMLWidgetMessage) => void>

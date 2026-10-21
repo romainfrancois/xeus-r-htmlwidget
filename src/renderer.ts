@@ -1,9 +1,9 @@
 import type { IRenderMime } from '@jupyterlab/rendermime-interfaces';
 import { Widget } from '@lumino/widgets';
-import { getComm, subscribe } from './comms';
+import { getComm, subscribe, subscribeClose } from './comms';
 import { ensureRuntime } from './runtime';
 import { loadDependencies } from './dependencies';
-import { ensureShiny, setInputHandler, getOutputBindingForElement, dispatchCustomMessage } from './shiny';
+import { ensureShiny, setInputHandler, getOutputBindingForElement, dispatchCustomMessage, removeInputHandler } from './shiny';
 import type { JSONValue } from '@lumino/coreutils';
 import type { Kernel } from '@jupyterlab/services';
 
@@ -30,6 +30,7 @@ export class HTMLWidgetRenderer
   private _comm: Kernel.IComm | null = null;
   private _elementId: string | null = null;
   private unsubscribe?: () => void;
+  private unsubscribeClose?: () => void;
 
   async renderModel(model: IRenderMime.IMimeModel): Promise<void> {
     // Remove any previous subscription
@@ -57,6 +58,10 @@ export class HTMLWidgetRenderer
       })
     );
     
+    this.unsubscribeClose = subscribeClose(data.comm_id, () => {
+      this.disposeView();
+    });
+
     // Subscribe before sending init
     this.unsubscribe = subscribe(data.comm_id, message => {
 
@@ -139,9 +144,26 @@ export class HTMLWidgetRenderer
 
   }
 
+  private disposeView(): void {
+    this.unsubscribeClose?.();
+    this.unsubscribeClose = undefined;
+  
+    this.unsubscribe?.();
+    this.unsubscribe = undefined;
+  
+    if (this._elementId) {
+      removeInputHandler(this._elementId);
+      this._elementId = null;
+    }
+  
+    this._comm = null;
+    this.node.replaceChildren();
+  }
+
   dispose(): void {
     this.unsubscribe?.();
     this.unsubscribe = undefined;
+    this.unsubscribeClose = undefined;
 
     console.log("closing view ", this._elementId);
     this._comm?.close();
