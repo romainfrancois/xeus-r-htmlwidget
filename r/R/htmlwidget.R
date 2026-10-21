@@ -197,7 +197,7 @@ Widget <- R6::R6Class(
       }
 
       invisible(self)
-    }
+    },
 
     send_custom_message = function(type, message) {
       for (id in ls(self$views)) {
