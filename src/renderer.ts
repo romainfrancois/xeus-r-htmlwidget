@@ -95,17 +95,17 @@ export class HTMLWidgetRenderer
           
             (window as any).HTMLWidgets.shinyMode = true;
 
-            binding.renderValue(el, {
-              ...data,
-              deps: []
-            });
-
             setInputHandler(el.id, (name, value) => {
               comm.send({
                 method: 'input',
                 name,
                 value: JSON.parse(JSON.stringify(value)) as JSONValue
               });
+            });
+
+            binding.renderValue(el, {
+              ...data,
+              deps: []
             });
 
             this._elementId = el.id;
