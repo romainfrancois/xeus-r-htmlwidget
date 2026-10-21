@@ -9,7 +9,8 @@ WidgetView <- R6::R6Class("WidgetView",
     initialize = function(widget) {
       self$widget <- widget
       self$comm <- CommManager$new_comm("xeus-r.htmlwidget")
-      self$comm$on_message(function(data) {
+      self$comm$on_message(function(message) {
+        data <- message$content$data
         private$handle_message(data)
       })
       self$comm$on_close(function(...) {
