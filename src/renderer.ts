@@ -33,8 +33,7 @@ export class HTMLWidgetRenderer
   private unsubscribeClose?: () => void;
 
   async renderModel(model: IRenderMime.IMimeModel): Promise<void> {
-    // Remove any previous subscription
-    this.unsubscribe?.();
+    this.disposeView();
 
     const data = model.data[MIME_TYPE] as
       unknown as { comm_id: string };
@@ -56,7 +55,7 @@ export class HTMLWidgetRenderer
       if (!this.isActive(comm)) {
         return;
       }
-      
+
       switch (message.method) {
         case 'init': {
           this.node.innerHTML = message.payload;
@@ -147,7 +146,7 @@ export class HTMLWidgetRenderer
         }
       },
       callback => subscribe(data.comm_id, message => {
-        if (message.method === 'runtime') {
+        if (this.isActive(comm) && message.method === 'runtime') {
           callback(message.content);
         }
       })
