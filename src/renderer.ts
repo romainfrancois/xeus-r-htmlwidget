@@ -5,7 +5,7 @@ import { ensureRuntime } from './runtime';
 import { loadDependencies } from './dependencies';
 import { ensureShiny, setInputHandler, getOutputBindingForElement, dispatchCustomMessage } from './shiny';
 import type { JSONValue } from '@lumino/coreutils';
-// import type { Kernel } from '@jupyterlab/services';
+import type { Kernel } from '@jupyterlab/services';
 
 export const MIME_TYPE =
   'application/vnd.jupyter.r-htmlwidget+json';
@@ -27,8 +27,8 @@ export class HTMLWidgetRenderer
   extends Widget
   implements IRenderMime.IRenderer {
 
-  // private _comm: Kernel.IComm | null = null;
-  // private _elementId: string | null = null;
+  private _comm: Kernel.IComm | null = null;
+  private _elementId: string | null = null;
   private unsubscribe?: () => void;
 
   async renderModel(model: IRenderMime.IMimeModel): Promise<void> {
@@ -44,7 +44,7 @@ export class HTMLWidgetRenderer
         this.node.textContent = 'HTML widget comm not found';
         return;
     }
-    // this._comm = comm;
+    this._comm = comm;
 
     await ensureRuntime(
       () => {
@@ -103,7 +103,7 @@ export class HTMLWidgetRenderer
               });
             });
 
-            // this._elementId = el.id;
+            this._elementId = el.id;
 
             comm.send({
               method: 'initialized',
@@ -142,6 +142,9 @@ export class HTMLWidgetRenderer
   dispose(): void {
     this.unsubscribe?.();
     this.unsubscribe = undefined;
+
+    console.log("closing view ", this._elementId);
+    this._comm?.close();
     super.dispose();
   }
 
