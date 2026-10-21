@@ -53,7 +53,10 @@ export class HTMLWidgetRenderer
 
     // Subscribe before sending init
     this.unsubscribe = subscribe(data.comm_id, message => {
-
+      if (!this.isActive(comm)) {
+        return;
+      }
+      
       switch (message.method) {
         case 'init': {
           this.node.innerHTML = message.payload;
@@ -116,11 +119,16 @@ export class HTMLWidgetRenderer
         case 'dependencies':
           void loadDependencies(message)
             .then(() => {
+              if (!this.isActive(comm)) {
+                return;
+              }
               console.log('HTMLWidget dependencies loaded', message);
               comm.send({ method: 'init' });
             })
             .catch(error => {
-              console.error('HTMLWidget dependency loading failed:', error);
+              if (this.isActive(comm)) {
+                console.error('HTMLWidget dependency loading failed:', error);
+              }
             });
           break;
 
