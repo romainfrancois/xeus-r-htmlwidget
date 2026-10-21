@@ -238,7 +238,7 @@ mime_types.WidgetView <- function(x) {
 #' @export
 mime_bundle.Widget <- function(x, mimetypes = mime_types(x), ...) {
   view <- x$new_view()
-  mime_bundle(view, mime_types = mime_types, ...)
+  mime_bundle(view, mime_types = mimetypes, ...)
 }
 
 #' @export
