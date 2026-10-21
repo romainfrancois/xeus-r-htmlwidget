@@ -244,6 +244,8 @@ Widget <- R6::R6Class(
       for (id in ids) {
         private$views_[[id]]$close()
       }
+      private$views_ <- new.env(parent = emptyenv())
+      private$input_callbacks <- new.env(parent = emptyenv())
 
       invisible(self)
     },
