@@ -50,32 +50,15 @@ export function subscribeClose(
   commId: string,
   callback: () => void
 ): () => void {
+  if (!comms.has(commId)) {
+    throw new Error(`Comm not found: ${commId}`);
+  }
+
   let handlers = closeHandlers.get(commId);
 
   if (!handlers) {
     handlers = new Set();
     closeHandlers.set(commId, handlers);
-
-    const comm = getComm(commId);
-
-    if (!comm) {
-      closeHandlers.delete(commId);
-      throw new Error(`Comm not found: ${commId}`);
-    }
-
-    const previousOnClose = comm.onClose;
-
-    comm.onClose = message => {
-      closeHandlers.delete(commId);
-
-      try {
-        for (const handler of handlers!) {
-          handler();
-        }
-      } finally {
-        previousOnClose?.(message);
-      }
-    };
   }
 
   handlers.add(callback);
@@ -133,7 +116,19 @@ export function registerCommTarget(
     };
 
     comm.onClose = () => {
+      const id = comm.commId;
+      const handlers = closeHandlers.get(id);
+
+      comms.delete(id);
+      listeners.delete(id);
+      closeHandlers.delete(id);
+
+      for (const callback of [...(handlers ?? [])]) {
+        callback();
+      }
+
       console.log('htmlwidget comm closed:', comm.commId);
+      
       comms.delete(comm.commId);
       listeners.delete(comm.commId);
     };
