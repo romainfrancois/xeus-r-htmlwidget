@@ -25,9 +25,9 @@ WidgetView <- R6::R6Class("WidgetView",
       }
 
       private$closed <- TRUE
+      on.exit(private$cleanup(), add = TRUE)
       self$comm$close()
-      private$cleanup()
-
+      
       invisible(self)
     }, 
 
@@ -237,6 +237,17 @@ mime_types.WidgetView <- function(x) {
 
 #' @export
 mime_bundle.Widget <- function(x, mimetypes = mime_types(x), ...) {
+
+  mime <- "application/vnd.jupyter.r-htmlwidget+json"
+  if (!(mime %in% mimetypes)) {
+    return(list(
+      data = list(
+        "text/plain" = "HTML widget requires support for application/vnd.jupyter.r-htmlwidget+json"
+      ),
+      metadata = list()
+    ))
+  }
+
   view <- x$new_view()
   mime_bundle(view, mime_types = mimetypes, ...)
 }
