@@ -10,8 +10,7 @@ WidgetView <- R6::R6Class("WidgetView",
       self$widget <- widget
       self$comm <- CommManager$new_comm("xeus-r.htmlwidget")
       self$comm$on_message(function(message) {
-        data <- message$content$data
-        private$handle_message(data)
+        private$handle_message(message$content$data)
       })
       self$comm$on_close(function(...) {
         private$cleanup()
