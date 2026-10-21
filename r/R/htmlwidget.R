@@ -48,7 +48,7 @@ WidgetView <- R6::R6Class("WidgetView",
 
     description = function() {
       glue::glue("<View comm_id={self$comm$id} id={self$id}>")
-    }, 
+    },
 
     is_closed = function() {
       isTRUE(private$closed)
@@ -173,6 +173,15 @@ Widget <- R6::R6Class(
 
     htmlwidget = NULL, 
     
+    description = function() {
+      views <- as.list(private$views_)
+      out <- glue::glue("<Widget with {length(views)} views>")
+      for (i in seq_along(views)) {
+        out <- c(out, glue::glue("  {views[[i]]$description()}"))
+      }
+      out
+    },
+
     initialize = function(htmlwidget) {
       self$htmlwidget <- htmlwidget
       private$views_ <- new.env(parent = emptyenv())
