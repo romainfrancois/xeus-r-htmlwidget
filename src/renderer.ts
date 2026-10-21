@@ -47,6 +47,10 @@ export class HTMLWidgetRenderer
     }
     this._comm = comm;
 
+    this.unsubscribeClose = subscribeClose(data.comm_id, () => {
+      this.disposeView();
+    });
+
     await ensureRuntime(
       () => {
         comm.send({ method: 'runtime' });
@@ -58,10 +62,6 @@ export class HTMLWidgetRenderer
       })
     );
     
-    this.unsubscribeClose = subscribeClose(data.comm_id, () => {
-      this.disposeView();
-    });
-
     // Subscribe before sending init
     this.unsubscribe = subscribe(data.comm_id, message => {
 
