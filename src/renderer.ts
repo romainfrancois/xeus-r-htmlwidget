@@ -51,9 +51,92 @@ export class HTMLWidgetRenderer
       this.disposeView();
     });
 
+    // Subscribe before sending init
+    this.unsubscribe = subscribe(data.comm_id, message => {
+
+      switch (message.method) {
+        case 'init': {
+          this.node.innerHTML = message.payload;
+        
+          const el = this.node.querySelector<HTMLElement>('.html-widget');
+          if (!el) {
+            break;
+          }
+          
+          const script = this.node.querySelector<HTMLScriptElement>(
+            `script[data-for="${el.id}"]`
+          );
+
+          if (!script?.textContent) {
+            break;
+          }
+
+          el.classList.add('html-widget-output', 'shiny-bound-output');
+
+          const binding = getOutputBindingForElement(el);
+
+          if (!binding) {
+            console.warn(`No output binding for ${el.id}`);
+            break;
+          }
+          
+          const data = JSON.parse(script.textContent);
+        
+          (window as any).HTMLWidgets.shinyMode = true;
+
+          setInputHandler(el.id, (name, value) => {
+            comm.send({
+              method: 'input',
+              name,
+              value: JSON.parse(JSON.stringify(value)) as JSONValue
+            });
+          });
+
+          this._elementId = el.id;
+
+          try {
+            binding.renderValue(el, {
+              ...data,
+              deps: []
+            });
+          } catch(error) {
+            removeInputHandler(el.id);
+            this._elementId = null;
+            throw error;
+          }
+
+          comm.send({
+            method: 'initialized',
+            id: this._elementId
+          });
+        
+          break;
+        }
+
+        case 'dependencies':
+          void loadDependencies(message)
+            .then(() => {
+              console.log('HTMLWidget dependencies loaded', message);
+              comm.send({ method: 'init' });
+            })
+            .catch(error => {
+              console.error('HTMLWidget dependency loading failed:', error);
+            });
+          break;
+
+        case 'custom': {
+          console.log("custom message", message);
+          dispatchCustomMessage(message.type, message.message);
+          break;
+        }
+      };
+    });
+
     await ensureRuntime(
       () => {
-        comm.send({ method: 'runtime' });
+        if (this.isActive(comm)) {
+          comm.send({ method: 'runtime' });
+        }
       },
       callback => subscribe(data.comm_id, message => {
         if (message.method === 'runtime') {
@@ -61,89 +144,11 @@ export class HTMLWidgetRenderer
         }
       })
     );
+
+    if (!this.isActive(comm)) {
+      return;
+    }
     
-    // Subscribe before sending init
-    this.unsubscribe = subscribe(data.comm_id, message => {
-
-        switch (message.method) {
-          case 'init': {
-            this.node.innerHTML = message.payload;
-          
-            const el = this.node.querySelector<HTMLElement>('.html-widget');
-            if (!el) {
-              break;
-            }
-            
-            const script = this.node.querySelector<HTMLScriptElement>(
-              `script[data-for="${el.id}"]`
-            );
-
-            if (!script?.textContent) {
-              break;
-            }
-
-            el.classList.add('html-widget-output', 'shiny-bound-output');
-
-            const binding = getOutputBindingForElement(el);
-
-            if (!binding) {
-              console.warn(`No output binding for ${el.id}`);
-              break;
-            }
-            
-            const data = JSON.parse(script.textContent);
-          
-            (window as any).HTMLWidgets.shinyMode = true;
-
-            setInputHandler(el.id, (name, value) => {
-              comm.send({
-                method: 'input',
-                name,
-                value: JSON.parse(JSON.stringify(value)) as JSONValue
-              });
-            });
-
-            this._elementId = el.id;
-
-            try {
-              binding.renderValue(el, {
-                ...data,
-                deps: []
-              });
-            } catch(error) {
-              removeInputHandler(el.id);
-              this._elementId = null;
-              throw error;
-            }
-
-            comm.send({
-              method: 'initialized',
-              id: this._elementId
-            });
-          
-            break;
-          }
-
-          case 'dependencies':
-            void loadDependencies(message)
-              .then(() => {
-                console.log('HTMLWidget dependencies loaded', message);
-                comm.send({ method: 'init' });
-              })
-              .catch(error => {
-                console.error('HTMLWidget dependency loading failed:', error);
-              });
-            break;
-
-          case 'custom': {
-            console.log("custom message", message);
-            dispatchCustomMessage(message.type, message.message);
-            break;
-          }
-        };
-
-    });
-
     comm.send({
         method: 'dependencies'
     });
@@ -182,6 +187,9 @@ export class HTMLWidgetRenderer
     }
   }
 
+  private isActive(comm: Kernel.IComm): boolean {
+    return !this.isDisposed && this._comm === comm;
+  }
 }
 
 export const rendererFactory: IRenderMime.IRendererFactory = {
