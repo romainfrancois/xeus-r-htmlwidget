@@ -174,8 +174,6 @@ export class HTMLWidgetRenderer
     } finally {
       super.dispose();
     }
-
-    super.dispose();
   }
 
 }
