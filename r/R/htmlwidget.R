@@ -228,7 +228,17 @@ Widget <- R6::R6Class(
 
     send_custom_message = function(type, message) {
       for (id in ls(private$views_)) {
-        private$views_[[id]]$send_custom_message(type, message)
+        if (view$is_closed() || is.null(view$id)) {
+          next
+        }
+
+        payload <- if (is.function(message)) {
+          message(view)
+        } else {
+          message
+        }
+
+        view$send_custom_message(type, payload)
       }
 
       invisible(self)
