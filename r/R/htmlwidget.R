@@ -5,7 +5,7 @@ WidgetView <- R6::R6Class("WidgetView",
   public = list(
     widget = NULL, 
     comm = NULL, 
-    id = character(), 
+    id = NULL, 
 
     initialize = function(widget) {
       self$widget <- widget
@@ -160,7 +160,10 @@ Widget <- R6::R6Class(
 
   active = list(
     views = function(value) {
-      private$views_
+      if (!missing(value)) {
+        stop("views is read-only")
+      }
+      as.list(private$views_)
     }
   ),
 
@@ -180,7 +183,12 @@ Widget <- R6::R6Class(
         out <- c(out, glue::glue("  {views[[i]]$description()}"))
       }
 
-      writeLines(out)
+      out
+    },
+
+    print = function(...) {
+      writeLines(self$description())
+      invisible(self)
     },
 
     initialize = function(htmlwidget) {
@@ -292,6 +300,10 @@ mime_bundle.Widget <- function(x, mimetypes = mime_types(x), ...) {
 
 #' @export
 mime_bundle.WidgetView <- function(x, mimetypes = mime_types(x), ...) {
+  if (x$is_closed()) {
+    stop("Cannot display a closed WidgetView")
+  }
+
   data <- list()
   metadata <- list()
 
