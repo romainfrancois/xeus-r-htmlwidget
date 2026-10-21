@@ -103,6 +103,8 @@ export class HTMLWidgetRenderer
               });
             });
 
+            this._elementId = el.id;
+
             try {
               binding.renderValue(el, {
                 ...data,
@@ -113,8 +115,6 @@ export class HTMLWidgetRenderer
               this._elementId = null;
               throw error;
             }
-
-            this._elementId = el.id;
 
             comm.send({
               method: 'initialized',
