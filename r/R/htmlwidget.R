@@ -179,7 +179,8 @@ Widget <- R6::R6Class(
       for (i in seq_along(views)) {
         out <- c(out, glue::glue("  {views[[i]]$description()}"))
       }
-      out
+
+      writeLines(out)
     },
 
     initialize = function(htmlwidget) {
