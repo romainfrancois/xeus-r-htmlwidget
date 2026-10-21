@@ -48,6 +48,10 @@ WidgetView <- R6::R6Class("WidgetView",
 
     description = function() {
       glue::glue("<View comm_id={self$comm$id} id={self$id}>")
+    }, 
+
+    is_closed = function() {
+      isTRUE(private$closed)
     }
   ), 
 
@@ -228,6 +232,8 @@ Widget <- R6::R6Class(
 
     send_custom_message = function(type, message) {
       for (id in ls(private$views_)) {
+        view <- private$views_[[id]]
+        
         if (view$is_closed() || is.null(view$id)) {
           next
         }
@@ -238,6 +244,7 @@ Widget <- R6::R6Class(
           message
         }
 
+        
         view$send_custom_message(type, payload)
       }
 
