@@ -1,33 +1,40 @@
 env_widgets <- new.env()
 
-#' @import hera
-#' @export
-HTMLWidget <- R6::R6Class(
-  "HTMLWidget",
-
-  private = list(
-    dependencies = NULL, 
-    input_callbacks = list()
-  ),
-
+WidgetView <- R6::R6Class("WidgetView", 
   public = list(
-    widget = NULL,
-    comm = NULL,
-    id = NULL,
+    widget = NULL, 
+    comm = NULL, 
+    id = character(), 
 
     initialize = function(widget) {
       self$widget <- widget
-
       self$comm <- CommManager$new_comm("xeus-r.htmlwidget")
-
-      self$comm$on_message(self$on_message)
-
-      env_widgets[[self$comm$id]] <- self
+      self$comm$on_message(function(data) {
+        private$handle_message(data)
+      })
+      self$on_close(function(...) {
+        private$cleanup()
+      })
+      private$closed <- FALSE
       self$comm$open()
-    },
+    }, 
+
+    close = function() {
+      if (private$closed) {
+        return(invisible(self))
+      }
+
+      private$closed <- TRUE
+      self$comm$close()
+      private$cleanup()
+
+      invisible(self)
+    }, 
 
     send_custom_message = function(type, message) {
-      stopifnot(is.character(type), length(type) == 1L, !is.na(type))
+      if (private$closed) {
+        stop("Cannot send a message to a closed WidgetView")
+      }
 
       self$comm$send(list(
         method = "custom",
@@ -36,60 +43,47 @@ HTMLWidget <- R6::R6Class(
       ))
 
       invisible(self)
-    },
+    }, 
 
-    on_message = function(message) {
-      data <- message$content$data
-      switch(data$method,
-        init         = self$on_init(),
-        dependencies = self$on_dependencies(),
-        runtime      = self$on_runtime(), 
-        initialized  = self$on_initialized(data),
-
-        input        = self$handle_input(data)
-      )
-    },
-
-    on_initialized = function(data) {
-      self$id <- data$id
-    },
-
-    handle_input = function(data) {
-      prefix <- paste0(self$id, "_")
-
-      if (!startsWith(data$name, prefix)) {
+    handle_message = function(data) {
+      if (private$closed) {
         return(invisible(NULL))
       }
 
-      name <- substring(data$name, nchar(prefix) + 1L)
-      callback <- private$input_callbacks[[name]]
+      switch(data$method, 
+        initialized = {
+          self$id <- data$id
+        }, 
+        input = {
+          self$widget$handle_input(
+            data$name, data$value, self
+          )
+        }, 
+        init = private$send_init(), 
+        runtime = private$send_runtime(), 
+        dependencies = private$send_dependencies()
+      )
+    }
 
-      if (is.function(callback)) {
-        callback(data$value)
-      }
 
-      invisible(NULL)
-    },
+  ), 
 
-    on_input = function(name, callback = NULL) {
-      if (is.null(name)) {
-        private$input_callbacks <- list()
-        return(invisible(self))
-      }
+  private = list(
+    closed = logical(), 
 
-      stopifnot(is.character(name), length(name) == 1L)
+    send_init = function() {
+      rendered <- htmltools::renderTags(
+        htmltools::as.tags(self$widget$widget)
+      )
+      self$comm$send(
+        data = list(
+          method = "init",
+          payload = rendered$html
+        )
+      )
+    }, 
 
-      if (is.null(callback)) {
-        private$input_callbacks[[name]] <- NULL
-      } else {
-        stopifnot(is.function(callback))
-        private$input_callbacks[[name]] <- callback
-      }
-
-      invisible(self)
-    },
-
-    on_runtime = function() {
+    send_runtime = function() {
       path <- system.file("www", "htmlwidgets.js", package = "htmlwidgets")
 
       content <- readBin(
@@ -102,23 +96,10 @@ HTMLWidget <- R6::R6Class(
         method = "runtime",
         content = jsonlite::base64_enc(content)
       ))
-    },
+    }, 
 
-    on_init = function() {
-
-      rendered <- htmltools::renderTags(
-        htmltools::as.tags(self$widget)
-      )
-      self$comm$send(
-        data = list(
-          method = "init",
-          payload = rendered$html
-        )
-      )
-    },
-
-    on_dependencies = function() {
-      private$dependencies <- dependencies <- htmltools::resolveDependencies(self$widget$dependencies)
+    send_dependencies = function() {
+      dependencies <- htmltools::resolveDependencies(self$widget$widget$dependencies)
       
       scripts <- list()
       stylesheets <- list()
@@ -142,30 +123,110 @@ HTMLWidget <- R6::R6Class(
         scripts     = unname(scripts),
         stylesheets = unname(stylesheets)
       ))
+    }
 
+  )
+)
+
+
+#' @import hera
+#' @export
+Widget <- R6::R6Class(
+  "Widget",
+
+  private = list(
+    widget = NULL, 
+    views = NULL,
+    input_callbacks = NULL
+  ),
+
+  public = list(
+    
+    initialize = function(widget) {
+      private$widget <- widget
+      private$views <- new.env(parent = emptyenv())
+      private$input_callback <- new.env(parent = emptyenv())
+    },
+
+    new_view = function() {
+      view <- WidgetView$new(self)
+      private$views[[view$comm$id]] <- view
+      view
+    }, 
+
+    remove_view = function(comm_id) {
+      if (exists(comm_id, envir = private$views, inherits = FALSE)) {
+        rm(list = comm_id, envir = private$views)
+      }
+
+      invisible(self)
+    }, 
+
+    on_input = function(name, callback = NULL) {
+      if (is.null(name)) {
+        private$input_callbacks <- new.env(parent = emptyenv())
+      } else {
+        private$input_callbacks[[name]] <- callback
+      }
+
+      invisible(self)
+    },
+
+    handle_input = function(name, value, view) {
+      prefix <- paste0(view$id, "_")
+
+      if (!startsWith(name, prefix)) {
+        return(invisible(NULL))
+      }
+
+      input_name <- substring(name, nchar(prefix) + 1L)
+      callback <- private$input_callbacks[[input_name]]
+
+      if (is.function(callback)) {
+        callback(value)
+      }
+
+      invisible(self)
+    },
+
+    close = function() {
+      ids <- ls(self$views)
+
+      for (id in ids) {
+        self$views[[id]]$close()
+      }
+
+      invisible(self)
+    }
+
+    send_custom_message = function(type, message) {
+      for (id in ls(self$views)) {
+        self$views[[id]]$send_custom_message(type, message)
+      }
+
+      invisible(self)
     }
   )
 )
 
-get_htmlwidget_model <- function(widget) {
-  for (id in ls(env_widgets)) {
-    model <- env_widgets[[id]]
-
-    if (identical(model$widget, widget)) {
-      return(model)
-    }
-  }
-  
-  NULL
-}
-
 #' @export
-mime_types.htmlwidget <- function(x) {
+mime_types.Widget <- function(x) {
   c("text/plain", "application/vnd.jupyter.r-htmlwidget+json")
 }
 
 #' @export
-mime_bundle.htmlwidget <- function(x, mimetypes = mime_types(x), ...) {
+mime_types.WidgetView <- function(x) {
+  c("text/plain", "application/vnd.jupyter.r-htmlwidget+json")
+}
+
+#' @export
+mime_bundle.Widget <- function(x, mimetypes = mime_types(x), ...) {
+  view <- x$new_view()
+  mime_bundle(view, mime_types = mime_types, ...)
+}
+
+#' @export
+mime_bundle.WidgetView <- function(x, mimetypes = mime_types(x), ...) {
   data <- list()
   metadata <- list()
 
@@ -175,12 +236,7 @@ mime_bundle.htmlwidget <- function(x, mimetypes = mime_types(x), ...) {
 
   mime <- "application/vnd.jupyter.r-htmlwidget+json"
   if (mime %in% mimetypes) {
-    model <- get_htmlwidget_model(x)
-    if (is.null(model)) {
-      model <- HTMLWidget$new(x)
-    }
-    
-    data[[mime]] <- list(comm_id = model$comm$id)
+    data[[mime]] <- list(comm_id = x$comm$id)
   }
 
   list(data = data, metadata = metadata)
