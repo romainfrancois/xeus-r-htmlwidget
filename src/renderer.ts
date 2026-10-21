@@ -103,16 +103,22 @@ export class HTMLWidgetRenderer
               });
             });
 
-            binding.renderValue(el, {
-              ...data,
-              deps: []
-            });
+            try {
+              binding.renderValue(el, {
+                ...data,
+                deps: []
+              });
+            } catch(error) {
+              removeInputHandler(el.id);
+              this._elementId = null;
+              throw error;
+            }
 
             this._elementId = el.id;
 
             comm.send({
               method: 'initialized',
-              id: el.id
+              id: this._elementId
             });
           
             break;
