@@ -1,5 +1,6 @@
 env_widgets <- new.env()
 
+#' @export
 WidgetView <- R6::R6Class("WidgetView", 
   public = list(
     widget = NULL, 
