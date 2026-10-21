@@ -161,12 +161,20 @@ export class HTMLWidgetRenderer
   }
 
   dispose(): void {
-    this.unsubscribe?.();
-    this.unsubscribe = undefined;
-    this.unsubscribeClose = undefined;
+    if (this.isDisposed) {
+      return;
+    }
 
-    console.log("closing view ", this._elementId);
-    this._comm?.close();
+    const comm = this._comm;
+
+    this.disposeView();
+
+    try {
+      comm?.close();
+    } finally {
+      super.dispose();
+    }
+
     super.dispose();
   }
 
