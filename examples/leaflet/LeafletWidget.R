@@ -62,24 +62,31 @@ LeafletWidget <- R6::R6Class(
   public = list(
     view_class = LeafletView,
 
-    set_view = function(lat, lng, zoom, options = NULL) {
+    initialize = function(widget) {
+        widget <- htmlwidgets::onRender(widget, "
+            function(el, x) {
+                LeafletWidget.methods.zoomIn = function(delta, options) {
+                    this.zoomIn(delta, options);
+                };
+
+                LeafletWidget.methods.zoomOut = function(delta, options) {
+                    this.zoomOut(delta, options);
+                };
+            }
+        ")
+        super$initialize(widget)
+    }, 
+
+    set_view = function(lat, lng, zoom = NULL, options = NULL) {
       self$broadcast("set_view", lat, lng, zoom, options)
     },
 
-    fly_to = function(lat, lng, zoom, options = NULL) {
+    fly_to = function(lat, lng, zoom = NULL, options = NULL) {
       self$broadcast("fly_to", lat, lng, zoom, options)
-    },
-
-    pan_to = function(lat, lng, options = NULL) {
-      self$broadcast("pan_to", lat, lng, options)
     },
 
     fit_bounds = function(south, west, north, east, options = NULL) {
       self$broadcast("fit_bounds", south, west, north, east, options)
-    },
-
-    set_zoom = function(zoom, options = NULL) {
-      self$broadcast("set_zoom", zoom, options)
     },
 
     zoom_in = function(delta = 1, options = NULL) {
