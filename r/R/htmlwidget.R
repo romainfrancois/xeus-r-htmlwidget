@@ -212,7 +212,7 @@ Widget <- R6::R6Class(
       invisible(self)
     }, 
 
-    on_input = function(name, callback = NULL) {
+    on = function(name, callback = NULL) {
       if (is.null(name)) {
         private$input_callbacks <- new.env(parent = emptyenv())
       } else {
