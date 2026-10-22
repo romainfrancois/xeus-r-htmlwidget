@@ -250,25 +250,33 @@ Widget <- R6::R6Class(
       invisible(self)
     },
 
-    send_custom_message = function(type, message) {
-      for (id in ls(private$views_)) {
-        view <- private$views_[[id]]
-        
+    broadcast = function(method, ...) {
+      for (view in as.list(private$views_)) {
         if (view$is_closed() || is.null(view$id)) {
           next
         }
 
-        payload <- if (is.function(message)) {
-          message(view)
+        if (is.function(method)) {
+          method(view, ...)
         } else {
-          message
+          view[[method]](...)
         }
-
-        
-        view$send_custom_message(type, payload)
       }
 
       invisible(self)
+    },
+
+    send_custom_message = function(type, message) {
+      fun <- if (is.function(message)) {
+        function(view) {
+          view$send_custom_message(type, message(view))
+        }
+      } else {
+        function(view) {
+          view$send_custom_message(type, message)
+        }
+      }
+      self$broadcast(fun)
     }
   )
 )
