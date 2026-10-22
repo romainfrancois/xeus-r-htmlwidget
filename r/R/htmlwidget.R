@@ -173,9 +173,22 @@ Widget <- R6::R6Class(
   ),
 
   public = list(
+    view_class = WidgetView,
 
     htmlwidget = NULL, 
     
+    initialize = function(htmlwidget) {
+      self$htmlwidget <- htmlwidget
+      private$views_ <- new.env(parent = emptyenv())
+      private$input_callbacks <- new.env(parent = emptyenv())
+    },
+
+    new_view = function() {
+      view <- self$view_class$$new(self)
+      private$views_[[view$comm$id]] <- view
+      view
+    }, 
+
     description = function() {
       views <- as.list(private$views_)
       out <- glue::glue("<Widget with {length(views)} views>")
@@ -190,18 +203,6 @@ Widget <- R6::R6Class(
       writeLines(self$description())
       invisible(self)
     },
-
-    initialize = function(htmlwidget) {
-      self$htmlwidget <- htmlwidget
-      private$views_ <- new.env(parent = emptyenv())
-      private$input_callbacks <- new.env(parent = emptyenv())
-    },
-
-    new_view = function() {
-      view <- WidgetView$new(self)
-      private$views_[[view$comm$id]] <- view
-      view
-    }, 
 
     remove_view = function(comm_id) {
       if (exists(comm_id, envir = private$views_, inherits = FALSE)) {
