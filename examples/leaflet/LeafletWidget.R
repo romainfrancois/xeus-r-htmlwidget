@@ -2,16 +2,12 @@ LeafletView <- R6::R6Class(
   "LeafletView",
   inherit = WidgetView,
   public = list(
-    set_view = function(lat, lng, zoom, options = NULL) {
+    set_view = function(lat, lng, zoom = NULL, options = NULL) {
       private$call_method("setView", c(lat, lng), zoom, options)
     },
 
-    fly_to = function(lat, lng, zoom, options = NULL) {
+    fly_to = function(lat, lng, zoom = NULL, options = NULL) {
       private$call_method("flyTo", c(lat, lng), zoom, options)
-    },
-
-    pan_to = function(lat, lng, options = NULL) {
-      private$call_method("panTo", c(lat, lng), options)
     },
 
     fit_bounds = function(south, west, north, east, options = NULL) {
@@ -20,10 +16,6 @@ LeafletView <- R6::R6Class(
         list(c(south, west), c(north, east)),
         options
       )
-    },
-
-    set_zoom = function(zoom, options = NULL) {
-      private$call_method("setZoom", zoom, options)
     },
 
     zoom_in = function(delta = 1, options = NULL) {
