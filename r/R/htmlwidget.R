@@ -184,7 +184,7 @@ Widget <- R6::R6Class(
     },
 
     new_view = function() {
-      view <- self$view_class$$new(self)
+      view <- self$view_class$new(self)
       private$views_[[view$comm$id]] <- view
       view
     }, 
