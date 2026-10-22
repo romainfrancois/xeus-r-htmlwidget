@@ -173,9 +173,22 @@ Widget <- R6::R6Class(
   ),
 
   public = list(
+    view_class = WidgetView,
 
     htmlwidget = NULL, 
     
+    initialize = function(htmlwidget) {
+      self$htmlwidget <- htmlwidget
+      private$views_ <- new.env(parent = emptyenv())
+      private$input_callbacks <- new.env(parent = emptyenv())
+    },
+
+    new_view = function() {
+      view <- self$view_class$new(self)
+      private$views_[[view$comm$id]] <- view
+      view
+    }, 
+
     description = function() {
       views <- as.list(private$views_)
       out <- glue::glue("<Widget with {length(views)} views>")
@@ -190,18 +203,6 @@ Widget <- R6::R6Class(
       writeLines(self$description())
       invisible(self)
     },
-
-    initialize = function(htmlwidget) {
-      self$htmlwidget <- htmlwidget
-      private$views_ <- new.env(parent = emptyenv())
-      private$input_callbacks <- new.env(parent = emptyenv())
-    },
-
-    new_view = function() {
-      view <- WidgetView$new(self)
-      private$views_[[view$comm$id]] <- view
-      view
-    }, 
 
     remove_view = function(comm_id) {
       if (exists(comm_id, envir = private$views_, inherits = FALSE)) {
@@ -250,25 +251,33 @@ Widget <- R6::R6Class(
       invisible(self)
     },
 
-    send_custom_message = function(type, message) {
-      for (id in ls(private$views_)) {
-        view <- private$views_[[id]]
-        
+    broadcast = function(method, ...) {
+      for (view in as.list(private$views_)) {
         if (view$is_closed() || is.null(view$id)) {
           next
         }
 
-        payload <- if (is.function(message)) {
-          message(view)
+        if (is.function(method)) {
+          method(view, ...)
         } else {
-          message
+          view[[method]](...)
         }
-
-        
-        view$send_custom_message(type, payload)
       }
 
       invisible(self)
+    },
+
+    send_custom_message = function(type, message) {
+      fun <- if (is.function(message)) {
+        function(view) {
+          view$send_custom_message(type, message(view))
+        }
+      } else {
+        function(view) {
+          view$send_custom_message(type, message)
+        }
+      }
+      self$broadcast(fun)
     }
   )
 )
