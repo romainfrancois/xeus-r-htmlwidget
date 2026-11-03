@@ -110,7 +110,7 @@ give a short description for the widget and its views
 \subsection{Method \code{on()}}{
 register a callback
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Widget$on(name, callback = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Widget$on(name, callback = NULL, add = TRUE, after = TRUE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -118,7 +118,11 @@ register a callback
 \describe{
 \item{\code{name}}{of the input}
 
-\item{\code{callback}}{callback function}
+\item{\code{callback}}{callback function. May have arguments value and/or view.}
+
+\item{\code{add}}{if TRUE the callback is added to the list of existing callbacks, otherwise a new callback list is created}
+
+\item{\code{after}}{if TRUE the callback is added at the end of the callback list, otherwise on the front}
 }
 \if{html}{\out{</div>}}
 }
