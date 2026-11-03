@@ -1,5 +1,7 @@
 #' @import hera
 #' @importFrom glue glue
+#' @importFrom cli cli_abort
+#' @importFrom rlang caller_env exec
 NULL
 
 #' html widget view
@@ -263,12 +265,26 @@ Widget <- R6::R6Class(
     #' @description register a callback
     #'
     #' @param name of the input
-    #' @param callback callback function
-    on = function(name, callback = NULL) {
-      if (is.null(name)) {
-        private$input_callbacks_ <- new.env(parent = emptyenv())
-      } else {
-        private$input_callbacks_[[name]] <- callback
+    #' @param callback callback function. May have arguments value and/or view.
+    #' @param add if TRUE the callback is added to the list of existing callbacks, otherwise a new callback list is created
+    #' @param after if TRUE the callback is added at the end of the callback list, otherwise on the front
+    #'
+    on = function(name, callback = NULL, add = TRUE, after = TRUE) {
+
+      if (is.null(callback)) {
+        private$input_callbacks_[[name]] <- NULL
+      } else if (is.function(callback)) {
+        # TODO: check that the function is what is expected
+
+        if (isTRUE(add)) {
+          if (isTRUE(after)) {
+            private$input_callbacks_[[name]] <- append(private$input_callbacks_[[name]], list(callback))
+          } else {
+            private$input_callbacks_[[name]] <- append(callback, private$input_callbacks_[[name]])
+          }
+        } else {
+          private$input_callbacks_[[name]] <- list(callback)
+        }
       }
 
       invisible(self)
@@ -289,10 +305,24 @@ Widget <- R6::R6Class(
       }
 
       input_name <- substring(name, nchar(prefix) + 1L)
-      callback <- private$input_callbacks_[[input_name]]
+      callbacks <- private$input_callbacks_[[input_name]]
 
-      if (is.function(callback)) {
-        callback(value)
+      for (callback in callbacks) {
+        formals <- names(formals(callback))
+
+        # TODO: do something with the error
+        withCallingHandlers(error = function(e) {}, {
+
+          args <- list()
+          if ("value" %in% formals) {
+            args <- append(args, list(value = value))
+          }
+          if ("view" %in% formals) {
+            args <- append(args, list(view = view))
+          }
+
+          rlang::exec(callback, !!!args)
+        })
       }
 
       invisible(self)

@@ -20,4 +20,6 @@ RoxygenNote: 7.3.3
 Imports: 
     hera (>= 0.6.0.9007),
     glue,
-    jsonlite
+    jsonlite, 
+    cli, 
+    rlang
