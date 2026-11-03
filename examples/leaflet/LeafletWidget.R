@@ -37,7 +37,7 @@ LeafletView <- R6::R6Class(
       }
 
       self$send("leaflet-calls", list(
-        id = self$id,
+        id = private$id_,
         calls = list(list(
           method = method,
           args = args,
