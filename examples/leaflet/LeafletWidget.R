@@ -36,7 +36,7 @@ LeafletView <- R6::R6Class(
         args <- args[-length(args)]
       }
 
-      self$send_custom_message("leaflet-calls", list(
+      self$send("leaflet-calls", list(
         id = self$id,
         calls = list(list(
           method = method,
