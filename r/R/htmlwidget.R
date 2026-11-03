@@ -32,7 +32,7 @@ WidgetView <- R6::R6Class("WidgetView",
       invisible(self)
     }, 
 
-    send_custom_message = function(type, message) {
+    send = function(type, message) {
       if (private$closed) {
         stop("Cannot send a message to a closed WidgetView")
       }
@@ -267,14 +267,14 @@ Widget <- R6::R6Class(
       invisible(self)
     },
 
-    send_custom_message = function(type, message) {
+    send = function(type, message) {
       fun <- if (is.function(message)) {
         function(view) {
-          view$send_custom_message(type, message(view))
+          view$send(type, message(view))
         }
       } else {
         function(view) {
-          view$send_custom_message(type, message)
+          view$send(type, message)
         }
       }
       self$broadcast(fun)
