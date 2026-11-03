@@ -124,3 +124,6 @@ dmypy.json
 
 # Yarn cache
 .yarn/
+
+jupyter.htmlwidgets.Rcheck
+jupyter.htmlwidgets_*.tar.gz
