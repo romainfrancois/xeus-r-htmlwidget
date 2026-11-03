@@ -91,8 +91,9 @@ WidgetView <- R6::R6Class("WidgetView",
   private = list(
     comm_ = NULL,
     id_ = NULL,
+    widget_ = NULL,
 
-    closed = logical(),
+    closed_ = logical(),
 
     send_init = function() {
       rendered <- htmltools::renderTags(
@@ -149,7 +150,7 @@ WidgetView <- R6::R6Class("WidgetView",
     },
 
     handle_message = function(data) {
-      if (private$closed) {
+      if (isTRUE(private$closed_)) {
         return(invisible(NULL))
       }
 
