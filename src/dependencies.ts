@@ -1,92 +1,74 @@
-
 import type { DependenciesMessage } from './comms';
 
 const scripts = new Map<string, Promise<void>>();
-const stylesheets = new Set<string>();
+const stylesheets = new Map<string, Promise<void>>();
 
-function blobURL(content: string, type: string): string {
-  const bytes = Uint8Array.from(atob(content), c => c.charCodeAt(0));
-  return URL.createObjectURL(new Blob([bytes], { type }));
-}
-
-
-function loadScript(path: string, content: string): Promise<void> {
-  const key = `${path}:${content}`;
-
-  const existing = scripts.get(key);
+function loadScript(url: string): Promise<void> {
+  const existing = scripts.get(url);
   if (existing) {
-    console.log('[dependencies] cached:', path);
     return existing;
   }
 
-  console.log('[dependencies] loading:', path);
-
   const promise = new Promise<void>((resolve, reject) => {
-    const url = blobURL(content, 'text/javascript');
     const script = document.createElement('script');
-
     script.src = url;
+    script.async = false;
 
-    script.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve();
-    };
+    script.onload = () => resolve();
 
     script.onerror = () => {
-      URL.revokeObjectURL(url);
       script.remove();
-      reject(new Error(`Failed to load script: ${path}`));
+      reject(new Error(`Failed to load script: ${url}`));
     };
 
     document.head.appendChild(script);
   }).catch(error => {
-    scripts.delete(key);
+    scripts.delete(url);
     throw error;
   });
 
-  scripts.set(key, promise);
+  scripts.set(url, promise);
   return promise;
 }
 
-function loadStylesheet(path: string, content: string): void {
-  const key = `${path}:${content}`;
-
-  if (stylesheets.has(key)) {
-    console.log('[dependencies] cached stylesheet:', path);
-    return;
+function loadStylesheet(url: string): Promise<void> {
+  const existing = stylesheets.get(url);
+  if (existing) {
+    return existing;
   }
 
-  console.log('[dependencies] loading stylesheet:', path);
+  const promise = new Promise<void>((resolve, reject) => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = url;
 
-  const url = blobURL(content, 'text/css');
-  const link = document.createElement('link');
+    link.onload = () => resolve();
 
-  link.rel = 'stylesheet';
-  link.href = url;
+    link.onerror = () => {
+      link.remove();
+      reject(new Error(`Failed to load stylesheet: ${url}`));
+    };
 
-  link.onload = () => {
-    URL.revokeObjectURL(url);
-  };
+    document.head.appendChild(link);
+  }).catch(error => {
+    stylesheets.delete(url);
+    throw error;
+  });
 
-  link.onerror = () => {
-    URL.revokeObjectURL(url);
-    stylesheets.delete(key);
-    link.remove();
-    console.warn(`Failed to load stylesheet: ${path}`);
-  };
-
-  stylesheets.add(key);
-  document.head.appendChild(link);
+  stylesheets.set(url, promise);
+  return promise;
 }
 
 export async function loadDependencies(
   message: DependenciesMessage
 ): Promise<void> {
-  for (const file of message.stylesheets) {
-    loadStylesheet(file.path, file.content);
-  }
+  for (const dependency of message.dependencies) {
+    await Promise.all(
+      dependency.stylesheets.map(loadStylesheet)
+    );
 
-  for (const file of message.scripts) {
-    await loadScript(file.path, file.content);
+    for (const url of dependency.scripts) {
+      await loadScript(url);
+    }
   }
 }

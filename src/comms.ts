@@ -8,17 +8,16 @@ export interface InitMessage {
   payload: string;
 }
 
-export interface DependencyFile {
+export interface Dependency {
   name: string;
   version: string;
-  path: string;
-  content: string; // base64
+  scripts: string[];
+  stylesheets: string[];
 }
 
 export interface DependenciesMessage {
   method: 'dependencies';
-  scripts: DependencyFile[];
-  stylesheets: DependencyFile[];
+  dependencies: Dependency[];
 }
 
 export interface RuntimeMessage {
