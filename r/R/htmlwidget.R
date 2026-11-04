@@ -126,6 +126,7 @@ WidgetView <- R6::R6Class("WidgetView",
 
     send_dependencies = function() {
       dependencies <- htmltools::resolveDependencies(private$widget_$htmlwidget$dependencies)
+      registered <- register_dependencies(dependencies)
 
       scripts <- list()
       stylesheets <- list()
@@ -452,4 +453,42 @@ read_resource <- function(name, version, src, path) {
       readBin(file, "raw", n = file.info(file)$size)
     )
   )
+}
+
+register_dependencies <- function(dependencies) {
+  dependencies <- htmltools::resolveDependencies(dependencies)
+
+  hera::http_start()
+
+  lapply(dependencies, function(dep) {
+    directory <- dep$src$file
+
+    if (is.null(directory)) {
+      stop("Dependency '", dep$name, "' does not have a local resource directory.")
+    }
+
+    directory <- normalizePath(
+      directory,
+      winslash = "/",
+      mustWork = TRUE
+    )
+
+    prefix <- paste0(
+      "htmlwidget-",
+      gsub("[^A-Za-z0-9._-]", "-", dep$name),
+      "-",
+      gsub("[^A-Za-z0-9._-]", "-", dep$version)
+    )
+
+    hera::http_add_resource_path(prefix, directory)
+
+    list(
+      name = dep$name,
+      version = dep$version,
+      prefix = prefix,
+      scripts = dep$script,
+      stylesheets = dep$stylesheet,
+      all_files = dep$all_files
+    )
+  })
 }
