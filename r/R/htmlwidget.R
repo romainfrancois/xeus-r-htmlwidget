@@ -125,29 +125,21 @@ WidgetView <- R6::R6Class("WidgetView",
     },
 
     send_dependencies = function() {
-      dependencies <- htmltools::resolveDependencies(private$widget_$htmlwidget$dependencies)
+      deps_resolved <- htmltools::resolveDependencies(private$widget_$htmlwidget$dependencies)
+      deps_registered <- register_dependencies(deps_resolved)
 
-      scripts <- list()
-      stylesheets <- list()
-
-      for (dep in dependencies) {
-        root <- dep$src$file
-
-        for (path in dep$script) {
-          resource <- read_resource(dep$name, dep$version, root, path)
-          scripts <- append(scripts, list(resource))
-        }
-
-        for (path in dep$stylesheet) {
-          resource <- read_resource(dep$name, dep$version, root, path)
-          stylesheets <- append(stylesheets, list(resource))
-        }
-      }
+      dependencies <- lapply(deps_registered, function(dep) {
+        list(
+          name = dep$name,
+          version = dep$version,
+          scripts = as.list(resource_urls(dep$prefix, dep$scripts)),
+          stylesheets = as.list(resource_urls(dep$prefix, dep$stylesheets))
+        )
+      })
 
       private$comm_$send(data = list(
-        method      = "dependencies",
-        scripts     = unname(scripts),
-        stylesheets = unname(stylesheets)
+        method       = "dependencies",
+        dependencies = dependencies
       ))
     },
 
@@ -452,4 +444,47 @@ read_resource <- function(name, version, src, path) {
       readBin(file, "raw", n = file.info(file)$size)
     )
   )
+}
+
+register_dependencies <- function(dependencies) {
+  dependencies <- htmltools::resolveDependencies(dependencies)
+
+  hera::http_start()
+
+  lapply(dependencies, function(dep) {
+    directory <- dep$src$file
+
+    if (is.null(directory)) {
+      stop("Dependency '", dep$name, "' does not have a local resource directory.")
+    }
+
+    directory <- normalizePath(
+      directory,
+      winslash = "/",
+      mustWork = TRUE
+    )
+
+    prefix <- paste0(
+      "htmlwidget-",
+      gsub("[^A-Za-z0-9._-]", "-", dep$name),
+      "-",
+      gsub("[^A-Za-z0-9._-]", "-", dep$version)
+    )
+
+    hera::http_add_resource_path(prefix, directory)
+
+    list(
+      name = dep$name,
+      version = dep$version,
+      prefix = prefix,
+      scripts = dep$script,
+      stylesheets = dep$stylesheet
+    )
+  })
+}
+
+resource_urls <- function(prefix, files) {
+  vapply(files, function(file) {
+    hera::http_url(paste(prefix, file, sep = "/"))
+  }, character(1), USE.NAMES = FALSE)
 }
