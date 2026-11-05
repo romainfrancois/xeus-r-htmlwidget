@@ -16,6 +16,7 @@ WidgetView <- R6::R6Class("WidgetView",
     initialize = function(widget) {
       private$widget_ <- widget
       private$comm_ <- CommManager$new_comm("xeus-r.htmlwidget")
+      private$comm_id_ <- private$comm_$id
       private$comm_$on_message(function(message) {
         private$handle_message(message$content$data)
       })
@@ -32,7 +33,6 @@ WidgetView <- R6::R6Class("WidgetView",
         return(invisible(self))
       }
 
-      private$closed_ <- TRUE
       on.exit(private$cleanup(), add = TRUE)
       private$comm_$close()
 
@@ -92,6 +92,7 @@ WidgetView <- R6::R6Class("WidgetView",
 
   private = list(
     comm_ = NULL,
+    comm_id_ = character(),
     id_ = NULL,
     widget_ = NULL,
 
@@ -170,13 +171,11 @@ WidgetView <- R6::R6Class("WidgetView",
 
       private$closed_ <- TRUE
 
-      widget <- private$widget_
-      private$widget_ <- NULL
-
-      if (!is.null(widget)) {
-        widget$remove_view(self)
+      if (!is.null(private$widget_)) {
+        private$widget_$remove_view(private$comm_id_)
       }
-
+      private$widget_ <- NULL
+      
       invisible(NULL)
     }
 
@@ -230,14 +229,10 @@ Widget <- R6::R6Class(
 
     #' @description remove view
     #'
-    #' @param view view to be removed
-    remove_view = function(view) {
-      if (!inherits(view, self$view_class)) {
-        stop("view must be a compatible WidgetView")
-      }
-      comm_id <- view$comm$id
-      if (exists(comm_id, envir = private$views_, inherits = FALSE)) {
-        rm(list = comm_id, envir = private$views_)
+    #' @param id comm_id of the view to remove
+    remove_view = function(id) {
+      if (exists(id, envir = private$views_, inherits = FALSE)) {
+        rm(list = id, envir = private$views_)
       }
 
       invisible(self)
