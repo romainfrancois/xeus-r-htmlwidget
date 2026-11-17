@@ -56,9 +56,45 @@ interface OutputBinding {
     renderValue(el: HTMLElement, data: any): void;
 }
 
-interface RegisteredBinding {
-    name: string;
-    binding: OutputBinding;
+class InputBinding {
+  find(_scope: HTMLElement): HTMLElement[] {
+      return [];
+  }
+
+  getId(el: HTMLElement): string {
+      return el.id;
+  }
+
+  getValue(_el: HTMLElement): unknown {
+      return null;
+  }
+
+  subscribe(
+      _el: HTMLElement,
+      _callback: (allowDeferred?: boolean) => void
+  ): void {}
+
+  unsubscribe(_el: HTMLElement): void {}
+}
+
+class InputBindings {
+  private bindings: Array<{
+      binding: InputBinding;
+      name: string;
+      priority: number;
+  }> = [];
+
+  register(
+      binding: InputBinding,
+      name: string,
+      priority = 0
+  ): void {
+      this.bindings.push({ binding, name, priority });
+  }
+
+  getBindings() {
+      return this.bindings;
+  }
 }
 
 export function ensureShiny(): void {
@@ -67,8 +103,11 @@ export function ensureShiny(): void {
     }
 
     const shiny = {
-        OutputBinding,
-        outputBindings: new OutputBindings(),
+      InputBinding,
+      inputBindings: new InputBindings(),
+
+      OutputBinding,
+      outputBindings: new OutputBindings(),
 
         setInputValue(name: string, value: JSONValue, _options?: unknown) {
             console.log('Shiny input:', name, value);
@@ -102,15 +141,30 @@ export function getOutputBinding(name: string) {
 }
 
 export function getOutputBindingForElement(
-    el: HTMLElement
-  ): OutputBinding | undefined {
-    const bindings =
-    (window as any).Shiny.outputBindings.getBindings() as RegisteredBinding[];
-  
-    return bindings.find(({ name }) =>
-      el.classList.contains(name)
-    )?.binding;
-  }
+  el: HTMLElement
+): OutputBinding | undefined {
+  const bindings: Array<{
+    binding: OutputBinding;
+    name: string;
+    priority: number;
+  }> = (window as any).Shiny.outputBindings.getBindings();
+
+  return bindings.find(({ binding }) => {
+    const parent = el.parentElement;
+    if (!parent) return false;
+
+    const $ = (window as any).jQuery;
+
+    if (!$) {
+      console.warn('jQuery is not available');
+      return false;
+    }
+
+    const matches = binding.find($(parent));
+
+    return Array.from(matches).includes(el);
+  })?.binding;
+}
 
 export function dispatchCustomMessage(
     type: string,
