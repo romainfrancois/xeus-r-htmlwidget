@@ -126,8 +126,21 @@ WidgetView <- R6::R6Class("WidgetView",
     },
 
     send_dependencies = function() {
-      deps_resolved <- htmltools::resolveDependencies(private$widget_$htmlwidget$dependencies)
-      deps_registered <- register_dependencies(deps_resolved)
+      widget <- private$widget_$htmlwidget
+
+      deps <- htmltools::resolveDependencies(
+        htmltools::findDependencies(
+          htmltools::as.tags(widget)
+        )
+      )
+
+      # Runtime is already handled separately
+      deps <- Filter(
+        function(dep) dep$name != "htmlwidgets",
+        deps
+      )
+
+      deps_registered <- register_dependencies(deps)
 
       dependencies <- lapply(deps_registered, function(dep) {
         list(
@@ -139,7 +152,7 @@ WidgetView <- R6::R6Class("WidgetView",
       })
 
       private$comm_$send(data = list(
-        method       = "dependencies",
+        method = "dependencies",
         dependencies = dependencies
       ))
     },
