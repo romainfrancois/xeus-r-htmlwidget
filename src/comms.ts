@@ -18,6 +18,8 @@ export interface Dependency {
 export interface DependenciesMessage {
   method: 'dependencies';
   dependencies: Dependency[];
+  frame_url?: string;
+  widget_name?: string;
 }
 
 export interface RuntimeMessage {
