@@ -153,7 +153,9 @@ WidgetView <- R6::R6Class("WidgetView",
 
       private$comm_$send(data = list(
         method = "dependencies",
-        dependencies = dependencies
+        dependencies = dependencies,
+        widget_name = class(widget)[[1L]],
+        frame_url = widget_frame_url()
       ))
     },
 
@@ -489,6 +491,13 @@ register_dependencies <- function(dependencies) {
       stylesheets = dep$stylesheet
     )
   })
+}
+
+widget_frame_url <- function() {
+  directory <- system.file("widget", package = "jupyter.htmlwidgets", mustWork = TRUE)
+  prefix <- "jupyter-htmlwidgets-frame"
+  hera::http_add_resource_path(prefix, directory)
+  hera::http_url(paste(prefix, "widget.html", sep = "/"))
 }
 
 resource_urls <- function(prefix, files) {
